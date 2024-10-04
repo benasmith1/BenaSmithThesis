@@ -36,6 +36,8 @@ library(broom)
 library(tidyr)
 library(stargazer)
 library(PerformanceAnalytics)
+library(tseries) # to test stationarity
+
 
 ```
 
@@ -79,7 +81,7 @@ Data for 2011 could not be found 2012:
 <https://www.efpia.eu/media/rm4kzdlx/the-pharmaceutical-industry-in-figures-2023.pdf>
 
 ```{r}
-efpia_rd <- read.csv("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Cleaned Data/Area Level R&D Spending/EFPIA R&D Spending by Country in EU.csv")
+efpia_rd <- read.csv("Cleaned Data/Area Level R&D Spending/EFPIA R&D Spending by Country in EU.csv")
 efpia_rd <- clean_names(efpia_rd)
 efpia_rd
 ```
@@ -106,7 +108,7 @@ Dollars to euros
 <https://www.macrotrends.net/2548/euro-dollar-exchange-rate-historical-chart>
 
 ```{r}
-usdtoeuroavgconversion <- read_xlsx("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Cleaned Data/Area Level R&D Spending/USD to Euro Conversion Avg byt Year.xlsx")
+usdtoeuroavgconversion <- read_xlsx("Cleaned Data/Area Level R&D Spending/USD to Euro Conversion Avg byt Year.xlsx")
 usdtoeuroavgconversion
 eurotodollars <- as.data.frame(cbind(usdtoeuroavgconversion$Year, 1/usdtoeuroavgconversion$`Average Closing Price`))
 colnames(eurotodollars) <- c("year", "euros_to_dollar_conversion")
@@ -131,7 +133,7 @@ EU Orphan Drugs were scraped from a pdf
 it can be found in the the Original Data Folder
 
 ```{r}
-eu_orphan_drugs <- read_xlsx("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Cleaned Data/Area Level Orphan Authorizations/EU_Orphan_w_Company from https___www.orpha.net_orphacom_cahiers_docs_GB_list_of_orphan_drugs_in_europe.pdf.xlsx")
+eu_orphan_drugs <- read_xlsx("Cleaned Data/Area Level Orphan Authorizations/EU_Orphan_w_Company from https___www.orpha.net_orphacom_cahiers_docs_GB_list_of_orphan_drugs_in_europe.pdf.xlsx")
 eu_orphan_drugs <- clean_names(eu_orphan_drugs)
 eu_orphan_drugs
 ```
@@ -249,7 +251,7 @@ eu_rd_mas
 <https://phrma.org/-/media/Project/PhRMA/PhRMA-Org/PhRMA-Refresh/Report-PDFs/P-R/PhRMA_membership-survey_2022_final.pdf>
 
 ```{r}
-phrma_us_rd <- read.csv("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Cleaned Data/Area Level R&D Spending/US Domestic R&D and R&D Abroad,* PhRMA Member Companies- 1983–2021 (dollar figures in millions) .csv")
+phrma_us_rd <- read.csv("Cleaned Data/Area Level R&D Spending/US Domestic R&D and R&D Abroad,* PhRMA Member Companies- 1983–2021 (dollar figures in millions) .csv")
 head(phrma_us_rd)
 ```
 
@@ -259,7 +261,7 @@ head(phrma_us_rd)
 products
 
 ```{r}
-us_orphan_drugs <- read.csv("~/Desktop/Research Proj/Pharma Proj/Compiled Report/Original Data/Area Level Orphan Authorizations/US_FDA_OD.csv")
+us_orphan_drugs <- read.csv("Original Data/Area Level Orphan Authorizations/US_FDA_OD.csv")
 
 us_orphan_drugs <- clean_names(us_orphan_drugs)
 us_orphan_drugs <- us_orphan_drugs[!is.na(us_orphan_drugs$marketing_approval_date), ] 
@@ -270,7 +272,6 @@ us_orphan_drugs[order(us_orphan_drugs$marketing_approval_date),]
 
 
 ```
-
 
 Check for duplicated rows Remove one row because duplicated
 
@@ -299,7 +300,6 @@ How many ODs with more than 1 authorization
 nrow(us_ma_freq[us_ma_freq$`Market Authorization Frequency` > 1, ])
 ```
 
-
 ```{r}
 stargazer(us_ma_freq[1:19,], title= "US Market Authorization Frequencies for Orphan Drugs with Over 5 Market Authorizations", rownames = FALSE, align=TRUE, summary=FALSE, type = "html", out="Final Figures Formatted/US_OD_Multiple_MAs.htm")
 
@@ -324,7 +324,10 @@ colnames(us_new_od_ma_freqs) <- c("Year", "Freq New Orphan Drug MAs")
 us_new_od_ma_freqs
 ```
 
-Make sure matches the "Number of Orphan Drug Approvals: 1262" from https://www.accessdata.fda.gov/scripts/opdlisting/oopd/listResult.cfm on 9/29/2024
+Make sure matches the "Number of Orphan Drug Approvals: 1262" from
+<https://www.accessdata.fda.gov/scripts/opdlisting/oopd/listResult.cfm>
+on 9/29/2024
+
 ```{r}
 nrow(us_orphan_drugs[year(as.Date(us_orphan_drugs$marketing_approval_date)), ])
 
@@ -345,7 +348,6 @@ us_od_ma_freqs <- merge(us_od_ma_freqs, us_new_od_ma_freqs, by = "Year")
 
 us_od_ma_freqs
 ```
-
 
 Graph of US Market Authorizations orphan drugs
 
@@ -403,6 +405,7 @@ us_rd_mas$annual_domestic_RD_spending_bil_dollars <- us_rd_mas$domestic_r_d /100
 us_rd_mas_simplified <- as.data.frame(cbind(us_rd_mas$year, us_rd_mas$annual_domestic_RD_spending_bil_dollars, us_rd_mas$freq_orphan_drug_m_as, us_rd_mas$freq_new_orphan_drug_m_as))
 colnames(us_rd_mas_simplified) <- c("year", "annual_domestic_RD_spending_bil_dollars", "freq_orphan_drug_mas", "freq_new_orphan_drug_mas")
 us_rd_mas_simplified$area <- rep("US", dim(us_rd_mas_simplified)[1])
+us_rd_mas_simplified$lagged_annual_domestic_RD_spending_bil_dollars <- lag(us_rd_mas_simplified$annual_domestic_RD_spending_bil_dollars)
 us_rd_mas_simplified
 ```
 
@@ -412,6 +415,7 @@ eu dataframe simplified
 eu_rd_mas_simplified <- as.data.frame(cbind(eu_rd_mas$year, eu_rd_mas$total_rd_bil_dollars, eu_rd_mas$freq_orphan_drug_m_as, eu_rd_mas$freq_new_orphan_drug_m_as))
 colnames(eu_rd_mas_simplified) <- c("year", "annual_domestic_RD_spending_bil_dollars", "freq_orphan_drug_mas", "freq_new_orphan_drug_mas")
 eu_rd_mas_simplified$area <- rep("EU", dim(eu_rd_mas_simplified)[1])
+eu_rd_mas_simplified$lagged_annual_domestic_RD_spending_bil_dollars <- lag(eu_rd_mas_simplified$annual_domestic_RD_spending_bil_dollars)
 eu_rd_mas_simplified
 ```
 
@@ -420,7 +424,7 @@ eu_rd_mas_simplified
 <https://www.macrotrends.net/global-metrics/countries/EUU/european-union/gdp-per-capita>
 
 ```{r}
-eu_gdp_percapita_annual <- read.csv("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Original Data/GDP/european-union-gdp-per-capita-annual.csv", skip=16)
+eu_gdp_percapita_annual <- read.csv("Original Data/GDP/european-union-gdp-per-capita-annual.csv", skip=16)
 eu_gdp_percapita_annual$year <- year(as.Date(eu_gdp_percapita_annual$date))
 eu_gdp_percapita_annual <- clean_names(eu_gdp_percapita_annual)
 colnames(eu_gdp_percapita_annual)[2] <- "gdp_per_capita_usd"
@@ -432,7 +436,7 @@ eu_gdp_percapita_annual
 <https://www.macrotrends.net/global-metrics/countries/EUU/european-union/gdp-growth-rate>
 
 ```{r}
-eu_gdp_growth_rate_annual <- read.csv("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Original Data/GDP/european-union-gdp-growth-rate.csv", skip=16)
+eu_gdp_growth_rate_annual <- read.csv("Original Data/GDP/european-union-gdp-growth-rate.csv", skip=16)
 
 eu_gdp_growth_rate_annual$year <- year(as.Date(eu_gdp_growth_rate_annual$date)) #format year
 
@@ -459,7 +463,7 @@ eu_rd_mas_simplified
 <https://www.macrotrends.net/global-metrics/countries/USA/united-states/gdp-per-capita>
 
 ```{r}
-us_gdp_percapita_annual <- read.csv("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Original Data/GDP/united-states-gdp-per-capita-annual.csv", skip=16)
+us_gdp_percapita_annual <- read.csv("Original Data/GDP/united-states-gdp-per-capita-annual.csv", skip=16)
 us_gdp_percapita_annual$year <- year(as.Date(us_gdp_percapita_annual$date))
 
 us_gdp_percapita_annual <- clean_names(us_gdp_percapita_annual)
@@ -474,7 +478,7 @@ us_gdp_percapita_annual
 <https://www.macrotrends.net/global-metrics/countries/USA/united-states/gdp-growth-rate>
 
 ```{r}
-us_gdp_growth_rate_annual <- read.csv("/Users/benasmith/Desktop/Research Proj/Pharma Proj/Compiled Report/Original Data/GDP/united-states-gdp-growth-rate.csv", skip=16)
+us_gdp_growth_rate_annual <- read.csv("Original Data/GDP/united-states-gdp-growth-rate.csv", skip=16)
 us_gdp_growth_rate_annual$year <- year(as.Date(us_gdp_growth_rate_annual$date))
 
 us_gdp_growth_rate_annual <- clean_names(us_gdp_growth_rate_annual)
@@ -610,7 +614,10 @@ plot(residuals)
 
 acf(residuals)
 pacf(residuals)
-mod.rd.nw.1 <- coeftest(mod.rd.1, vcov = NeweyWest(mod.rd.1, lag = 1, prewhite = FALSE))
+
+mod.rd.1.vcov <- vcovPL(mod.rd.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
+
+mod.rd.nw.1 <- coeftest(mod.rd.1, vcov = mod.rd.1.vcov) 
 mod.rd.nw.1
 
 ```
@@ -626,8 +633,14 @@ plot(residuals)
 
 acf(residuals)
 pacf(residuals)
-mod.rd.nw.2 <- coeftest(mod.rd.2, vcov = NeweyWest(mod.rd.2, lag = 1, prewhite = FALSE))
+
+mod.rd.2.vcov <- vcovPL(mod.rd.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
+
+mod.rd.nw.2 <- coeftest(mod.rd.2, vcov = mod.rd.2.vcov) 
 mod.rd.nw.2
+
+
+
 ```
 
 ## Model of R&D spending by country and year with interaction
@@ -641,8 +654,12 @@ plot(residuals)
 
 acf(residuals)
 pacf(residuals)
-mod.rd.nw.3 <- coeftest(mod.rd.3, vcov = NeweyWest(mod.rd.3, lag = 1, prewhite = FALSE))
+
+mod.rd.3.vcov <- vcovPL(mod.rd.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
+
+mod.rd.nw.3 <- coeftest(mod.rd.3, vcov = mod.rd.3.vcov) 
 mod.rd.nw.3
+
 ```
 
 ## Model of R&D spending by area and year adjusted for gdp growth rate
@@ -657,7 +674,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.rd.nw.4 <- coeftest(mod.rd.4, vcov = NeweyWest(mod.rd.4, lag = 1, prewhite = FALSE))
+mod.rd.4.vcov <- vcovPL(mod.rd.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.rd.nw.4 <- coeftest(mod.rd.4, vcov = mod.rd.4.vcov) # vcov = NeweyWest(mod.rd.4, lag = 1, prewhite = FALSE))
 mod.rd.nw.4
 
 ```
@@ -722,15 +740,10 @@ acf(residuals)
 pacf(residuals)
  
 mod.od.1.vcov <- vcovPL(mod.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.od.nw.1 <- coeftest(mod.od.1, vcov = mod.od.1.vcov) # vcov = NeweyWest(mod.od.1, lag = 1, prewhite = FALSE))
+mod.od.nw.1 <- coeftest(mod.od.1, vcov = mod.od.1.vcov) 
 mod.od.nw.1
 
-mod.od.nw.1.test <- coeftest(mod.od.1, , vcov = NeweyWest(mod.od.1, lag = 1, prewhite = FALSE))
-mod.od.nw.1.test
-
-BIC(mod.od.nw.1)
 confint(mod.od.nw.1)
-kpss.test(residuals)
 
 ```
 
@@ -761,7 +774,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.od.nw.2 <- coeftest(mod.od.2, vcov = NeweyWest(mod.od.2, lag = 1, prewhite = FALSE))
+mod.od.2.vcov <- vcovPL(mod.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.nw.2 <- coeftest(mod.od.2, vcov = mod.od.2.vcov)
 mod.od.nw.2
 confint(mod.od.nw.2)
 
@@ -789,7 +803,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.od.nw.3 <-coeftest(mod.od.3, vcov = NeweyWest(mod.od.3, lag = 1, prewhite = FALSE))
+mod.od.3.vcov <- vcovPL(mod.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.nw.3 <-coeftest(mod.od.3, vcov = mod.od.3.vcov)
 mod.od.nw.3
 
 confint(mod.od.nw.3)
@@ -807,7 +822,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.od.nw.4 <-coeftest(mod.od.4, vcov = NeweyWest(mod.od.4, lag = 1, prewhite = FALSE))
+mod.od.4.vcov <- vcovPL(mod.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.nw.4 <-coeftest(mod.od.4, vcov = mod.od.4.vcov)
 mod.od.nw.4
 
 confint(mod.od.nw.4)
@@ -824,7 +840,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.od.nw.5 <-coeftest(mod.od.5, vcov = NeweyWest(mod.od.5, lag = 1, prewhite = FALSE))
+mod.od.5.vcov <- vcovPL(mod.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.nw.5 <-coeftest(mod.od.5, vcov = mod.od.5.vcov)
 mod.od.nw.5
 
 confint(mod.od.nw.5)
@@ -841,7 +858,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.od.nw.6 <- coeftest(mod.od.6, vcov = NeweyWest(mod.od.6, lag = 1 , prewhite = FALSE))
+mod.od.6.vcov <- vcovPL(mod.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.nw.6 <-coeftest(mod.od.6, vcov = mod.od.6.vcov)
 mod.od.nw.6
 
 confint(mod.od.nw.6)
@@ -891,7 +909,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.new.od.nw.1 <- coeftest(mod.new.od.1, vcov = NeweyWest(mod.new.od.1, lag = 1, prewhite = FALSE))
+mod.new.od.1.vcov <- vcovPL(mod.new.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.1 <-coeftest(mod.new.od.1, vcov = mod.new.od.1.vcov)
 mod.new.od.nw.1
 
 confint(mod.new.od.nw.1)
@@ -925,8 +944,10 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.new.od.nw.2 <- coeftest(mod.new.od.2, vcov = NeweyWest(mod.new.od.2, lag = 1, prewhite = FALSE))
+mod.new.od.2.vcov <- vcovPL(mod.new.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.2 <-coeftest(mod.new.od.2, vcov = mod.new.od.2.vcov)
 mod.new.od.nw.2
+
 confint(mod.new.od.nw.2)
 
 ```
@@ -953,7 +974,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.new.od.nw.3 <-coeftest(mod.new.od.3, vcov = NeweyWest(mod.new.od.3, lag = 1, prewhite = FALSE))
+mod.new.od.3.vcov <- vcovPL(mod.new.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.3 <-coeftest(mod.new.od.3, vcov = mod.new.od.3.vcov)
 mod.new.od.nw.3
 
 confint(mod.new.od.nw.3)
@@ -971,7 +993,9 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.new.od.nw.4 <-coeftest(mod.new.od.4, vcov = NeweyWest(mod.new.od.4, lag = 1, prewhite = FALSE))
+
+mod.new.od.4.vcov <- vcovPL(mod.new.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.4 <-coeftest(mod.new.od.4, vcov = mod.new.od.4.vcov)
 mod.new.od.nw.4
 
 confint(mod.new.od.nw.4)
@@ -988,7 +1012,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.new.od.nw.5 <-coeftest(mod.new.od.5, vcov = NeweyWest(mod.new.od.5, lag = 1, prewhite = FALSE))
+mod.new.od.5.vcov <- vcovPL(mod.new.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.5 <-coeftest(mod.new.od.5, vcov = mod.new.od.5.vcov)
 mod.new.od.nw.5
 
 confint(mod.new.od.nw.5)
@@ -1005,8 +1030,11 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.new.od.nw.6 <- coeftest(mod.new.od.6, vcov = NeweyWest(mod.new.od.6, lag = 1 , prewhite = FALSE))
+
+mod.new.od.6.vcov <- vcovPL(mod.new.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.6 <-coeftest(mod.new.od.6, vcov = mod.new.od.6.vcov)
 mod.new.od.nw.6
+
 
 confint(mod.new.od.nw.6)
 ```
@@ -1122,11 +1150,13 @@ plot(residuals)
 
 acf(residuals)
 pacf(residuals)
-
-mod.pois.od.nw.1 <- coeftest(mod.pois.od.1, vcov = NeweyWest(mod.pois.od.1, lag = 1, prewhite = FALSE))
+ 
+mod.pois.od.1.vcov <- vcovPL(mod.pois.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.1 <- coeftest(mod.pois.od.1, vcov = mod.pois.od.1.vcov)
 mod.pois.od.nw.1
 
 confint(mod.pois.od.nw.1)
+
 ```
 
 <!-- plm package -->
@@ -1156,8 +1186,11 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.od.nw.2 <- coeftest(mod.pois.od.2, vcov = NeweyWest(mod.pois.od.2, lag = 1, prewhite = FALSE))
+ 
+mod.pois.od.2.vcov <- vcovPL(mod.pois.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.2 <- coeftest(mod.pois.od.2, vcov = mod.pois.od.2.vcov)
 mod.pois.od.nw.2
+
 confint(mod.pois.od.nw.2)
 
 ```
@@ -1174,7 +1207,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.od.nw.3 <-coeftest(mod.pois.od.3, vcov = NeweyWest(mod.pois.od.3, lag = 1, prewhite = FALSE))
+mod.pois.od.3.vcov <- vcovPL(mod.pois.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.3 <- coeftest(mod.pois.od.3, vcov = mod.pois.od.3.vcov)
 mod.pois.od.nw.3
 
 confint(mod.pois.od.nw.3)
@@ -1192,7 +1226,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.od.nw.4 <-coeftest(mod.pois.od.4, vcov = NeweyWest(mod.pois.od.4, lag = 1, prewhite = FALSE))
+mod.pois.od.4.vcov <- vcovPL(mod.pois.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.4 <- coeftest(mod.pois.od.4, vcov = mod.pois.od.4.vcov)
 mod.pois.od.nw.4
 
 confint(mod.pois.od.nw.4)
@@ -1209,7 +1244,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.od.nw.5 <-coeftest(mod.pois.od.5, vcov = NeweyWest(mod.pois.od.5, lag = 1, prewhite = FALSE))
+mod.pois.od.5.vcov <- vcovPL(mod.pois.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.5 <- coeftest(mod.pois.od.5, vcov = mod.pois.od.5.vcov)
 mod.pois.od.nw.5
 
 confint(mod.pois.od.nw.5)
@@ -1226,7 +1262,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.od.nw.6 <- coeftest(mod.pois.od.6, vcov = NeweyWest(mod.pois.od.6, lag = 1 , prewhite = FALSE))
+mod.pois.od.6.vcov <- vcovPL(mod.pois.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.6 <- coeftest(mod.pois.od.6, vcov = mod.pois.od.6.vcov)
 mod.pois.od.nw.6
 
 confint(mod.pois.od.nw.6)
@@ -1283,7 +1320,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.new.od.nw.1 <- coeftest(mod.pois.new.od.1, vcov = NeweyWest(mod.pois.new.od.1, lag = 1, prewhite = FALSE))
+mod.pois.new.od.1.vcov <- vcovPL(mod.pois.new.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.new.od.nw.1 <- coeftest(mod.pois.new.od.1, vcov = mod.pois.new.od.1.vcov)
 mod.pois.new.od.nw.1
 
 confint(mod.pois.new.od.nw.1)
@@ -1301,8 +1339,10 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.new.od.nw.2 <- coeftest(mod.pois.new.od.2, vcov = NeweyWest(mod.pois.new.od.2, lag = 1, prewhite = FALSE))
+mod.pois.new.od.2.vcov <- vcovPL(mod.pois.new.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.new.od.nw.2 <- coeftest(mod.pois.new.od.2, vcov = mod.pois.new.od.2.vcov)
 mod.pois.new.od.nw.2
+
 confint(mod.pois.new.od.nw.2)
 
 ```
@@ -1319,8 +1359,10 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.new.od.nw.3 <-coeftest(mod.pois.new.od.3, vcov = NeweyWest(mod.pois.new.od.3, lag = 1, prewhite = FALSE))
+mod.pois.new.od.3.vcov <- vcovPL(mod.pois.new.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.new.od.nw.3 <- coeftest(mod.pois.new.od.3, vcov = mod.pois.new.od.3.vcov)
 mod.pois.new.od.nw.3
+
 
 confint(mod.pois.new.od.nw.3)
 ```
@@ -1337,7 +1379,8 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.new.od.nw.4 <-coeftest(mod.pois.new.od.4, vcov = NeweyWest(mod.pois.new.od.4, lag = 1, prewhite = FALSE))
+mod.pois.new.od.4.vcov <- vcovPL(mod.pois.new.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.new.od.nw.4 <- coeftest(mod.pois.new.od.4, vcov = mod.pois.new.od.4.vcov)
 mod.pois.new.od.nw.4
 
 confint(mod.pois.new.od.nw.4)
@@ -1354,8 +1397,10 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.new.od.nw.5 <-coeftest(mod.pois.new.od.5, vcov = NeweyWest(mod.pois.new.od.5, lag = 1, prewhite = FALSE))
+mod.pois.new.od.5.vcov <- vcovPL(mod.pois.new.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.new.od.nw.5 <- coeftest(mod.pois.new.od.5, vcov = mod.pois.new.od.5.vcov)
 mod.pois.new.od.nw.5
+
 
 confint(mod.pois.new.od.nw.5)
 ```
@@ -1371,8 +1416,10 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-mod.pois.new.od.nw.6 <- coeftest(mod.pois.new.od.6, vcov = NeweyWest(mod.pois.new.od.6, lag = 1 , prewhite = FALSE))
+mod.pois.new.od.6.vcov <- vcovPL(mod.pois.new.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.new.od.nw.6 <- coeftest(mod.pois.new.od.6, vcov = mod.pois.new.od.6.vcov)
 mod.pois.new.od.nw.6
+
 
 confint(mod.pois.new.od.nw.6)
 ```
@@ -1413,10 +1460,11 @@ stargazer(m5,m6,m4,m1,m3,m2, title="Newey-West Adjusted Poisson Models of Market
           )
 ```
 
+
+
 # Stationarity Test
 
 ```{r}
-library(tseries)
 kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas)
 kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas)
 
@@ -1452,127 +1500,17 @@ adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_s
 
 Augmented Dickey-Fuller test for the null that x has a unit root.
 
-## Taking differences
 
-```{r}
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas))
 
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas))
 
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars))
 
-```
 
-```{r}
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas))
 
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas))
 
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars))
 
-```
 
-## Taking second differences
 
-```{r}
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas,differences = 2))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas,differences = 2))
 
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas,differences = 2))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas,differences = 2))
-
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars,differences = 2))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars,differences = 2))
-
-```
-
-```{r}
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas, differences = 2))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas, differences = 2))
-
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas, differences = 2))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas, differences = 2))
-
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars, differences = 2))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars, differences = 2))
-
-```
-
-## Taking third differences
-
-```{r}
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas,differences = 3))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas,differences = 3))
-
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas,differences = 3))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas,differences = 3))
-
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars,differences = 3))
-kpss.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars,differences = 3))
-
-```
-
-```{r}
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas, differences = 3))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas, differences = 3))
-
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas, differences = 3))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas, differences = 3))
-
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars, differences = 3))
-adf.test(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars, differences = 3))
-
-```
-
-## Plotting Differences
-
-First Difference
-
-```{r}
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas, differences = 1), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas, differences = 1), type="l")
-
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas, differences = 1), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas, differences = 1), type="l")
-
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars, differences = 1), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars, differences = 1), type="l")
-
-```
-
-Second Difference
-
-```{r}
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas, differences = 2), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas, differences = 2), type="l")
-
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas, differences = 2), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas, differences = 2), type="l")
-
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars, differences = 2), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars, differences = 2), type="l")
-
-```
-
-Third Difference
-
-```{r}
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas, differences = 3), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas, differences = 3), type="l")
-
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas, differences = 3), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas, differences = 3), type="l")
-
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars, differences = 3), type="l")
-plot(diff(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars, differences = 3), type="l")
-
-```
 
 # ACFs of original series
 
@@ -1601,53 +1539,8 @@ pacf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spend
 ```
 
 
-
-# One year lagged R&D 
-
-```{r}
-combined_rd_ma_df
-```
-
-
 ```{r}
 sum(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas)
 ```
-
-```{r}
-mod.od.1 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df)
-summary(mod.od.1)
-
-residuals <- resid(mod.od.1)
-plot(residuals)
-
-acf(residuals)
-pacf(residuals)
- 
-mod.od.1.vcov <- vcovPL(mod.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.od.nw.1 <- coeftest(mod.od.1, vcov = mod.od.1.vcov) # vcov = NeweyWest(mod.od.1, lag = 1, prewhite = FALSE))
-mod.od.nw.1
-
-mod.od.nw.1.test <- coeftest(mod.od.1, , vcov = NeweyWest(mod.od.1, lag = 1, prewhite = FALSE))
-mod.od.nw.1.test
-
-BIC(mod.od.nw.1)
-confint(mod.od.nw.1)
-kpss.test(residuals)
-
-```
-
-
-
-
-
-
-
-# Analysis of All Drugs
-## FDA All Approvals
-
-
-
-
-
 
 
