@@ -104,6 +104,18 @@ efpia_rd_totals
 
 ```
 
+Imputing 2011 with average between 2011 and 2012 efpia_rd_totals
+
+```{r}
+rd_2012 <- efpia_rd_totals[efpia_rd_totals$year == 2012, ]$total_mil_euros
+rd_2010 <- efpia_rd_totals[efpia_rd_totals$year == 2010, ]$total_mil_euros
+avg_2010_2012 <- (rd_2010 + rd_2012) / 2
+
+efpia_rd_totals <- rbind(efpia_rd_totals, c(2011, avg_2010_2012))
+efpia_rd_totals <- efpia_rd_totals[order(efpia_rd_totals$year),]
+efpia_rd_totals
+```
+
 Dollars to euros
 <https://www.macrotrends.net/2548/euro-dollar-exchange-rate-historical-chart>
 
@@ -502,6 +514,7 @@ us_rd_mas_simplified
 combined_rd_ma_df <- rbind(eu_rd_mas_simplified, us_rd_mas_simplified)
 combined_rd_ma_df <- combined_rd_ma_df %>%
   filter(year > 2003)
+combined_rd_ma_df[combined_rd_ma_df$area =="US" & combined_rd_ma_df$year==2004,]$lagged_annual_domestic_RD_spending_bil_dollars <-  NA
 combined_rd_ma_df
 ```
 
@@ -538,6 +551,7 @@ ggplot(combined_rd_ma_df, aes(x = year , y = freq_new_orphan_drug_mas, color = a
     theme_minimal() +
     scale_color_manual(values = colorpallate)
 ```
+
 
 ```{r}
 ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_dollars, color = area)) +
@@ -601,6 +615,53 @@ combined_rd_ma_df$yearsafter2004 <- combined_rd_ma_df$year - 2004
 combined_rd_ma_df
 ```
 
+```{r}
+17.02097/17.52581
+```
+
+# Summmaries
+
+R&D spending grpwth rates by year
+
+```{r}
+rdspending <- combined_rd_ma_df[combined_rd_ma_df$area == "EU", ]$annual_domestic_RD_spending_bil_dollars 
+laggedrdspending <- combined_rd_ma_df[combined_rd_ma_df$area == "EU", ]$lagged_annual_domestic_RD_spending_bil_dollars 
+EU_annual_domestic_RD_spending_bil_dollars_growth_rate <- rdspending/laggedrdspending
+EU_annual_domestic_RD_spending_bil_dollars_growth_rate
+
+
+
+rdspending <- combined_rd_ma_df[combined_rd_ma_df$area == "US", ]$annual_domestic_RD_spending_bil_dollars 
+laggedrdspending <- combined_rd_ma_df[combined_rd_ma_df$area == "US", ]$lagged_annual_domestic_RD_spending_bil_dollars 
+US_annual_domestic_RD_spending_bil_dollars_growth_rate <- rdspending/laggedrdspending
+US_annual_domestic_RD_spending_bil_dollars_growth_rate
+```
+
+```{r}
+rdspending_growth_rates <- data.frame("Year"=seq(2004,2021), "US"=round(US_annual_domestic_RD_spending_bil_dollars_growth_rate,2), "EU"=round(EU_annual_domestic_RD_spending_bil_dollars_growth_rate,2))
+
+rdspending_growth_rates$US <- as.character(rdspending_growth_rates$US )
+rdspending_growth_rates$EU <- as.character(rdspending_growth_rates$EU )
+
+# make 2011 NA because 2011 values were imputed 
+rdspending_growth_rates[rdspending_growth_rates$Year == 2011,]$EU <- "NA"
+rdspending_growth_rates
+
+stargazer(rdspending_growth_rates, title="R&D Spending in USD Annual Growth Rates in the EU and US", align=TRUE, type = "html", out="Final Figures Formatted/RDSpendingAnnualGrowthRates.htm", summary = FALSE, digits=2, digit.separator="", rownames = FALSE)
+```
+
+```{r}
+rdspending_growth_rates
+colnames(rdspending_growth_rates) <- c("Year", "US", "EU")
+```
+
+```{r}
+
+stargazer(rdspending_growth_rates,  out="Final Figures Formatted/RDSpendingAnnualGrowthRates.htm" , summary=FALSE, rownames=FALSE, colnames = TRUE, digits=2, digit.separator="",column.sep.width= "15pt", title="Annual Growth Rate of Phramaceutical R&D Spending")
+```
+
+
+
 # R&D Models
 
 ## Model of R&D Spending by area
@@ -650,10 +711,10 @@ mod.rd.3 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) * year
 summary(mod.rd.3)
 
 residuals <- resid(mod.rd.3)
-plot(residuals)
+plot(combined_rd_ma_df$year, residuals, xlab="Year", main="Model 3 Residuals", ylab="Residuals")
 
-acf(residuals)
-pacf(residuals)
+acf(residuals, main="ACF of Model 3 Residuals")
+pacf(residuals, main="PACF of Model 3 Residuals")
 
 mod.rd.3.vcov <- vcovPL(mod.rd.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
 
@@ -669,104 +730,118 @@ mod.rd.4 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) + gdp_
 summary(mod.rd.4)
 
 residuals <- resid(mod.rd.4)
-plot(residuals)
+plot(combined_rd_ma_df$year, residuals, xlab="Year", main="Model 4 Residuals", ylab="Residuals")
 
-acf(residuals)
-pacf(residuals)
+acf(residuals, main="ACF of Model 4 Residuals")
+pacf(residuals, main="PACF of Model 4 Residuals")
+kpss.test(residuals)
+adf.test(residuals)
 
 mod.rd.4.vcov <- vcovPL(mod.rd.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 mod.rd.nw.4 <- coeftest(mod.rd.4, vcov = mod.rd.4.vcov) # vcov = NeweyWest(mod.rd.4, lag = 1, prewhite = FALSE))
 mod.rd.nw.4
+confint(mod.rd.nw.4)
+
+
 
 ```
 
-<!-- # ```{r} -->
 
-<!-- # mod.rd.nw.1 <- gls(model=annual_domestic_RD_spending_dollars ~  as.factor(area) + gdp_per_capita_usd +yearsafter2004 + yearsafter2004*as.factor(area), data=combined_rd_od_df, corARMA(p = 0, q = 1)) -->
 
-<!-- # summary(mod.rd.nw.1) -->
+```{r}
+predicted <- predict(mod.rd.3 , type = "response")
 
-<!-- # ``` -->
+ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_dollars, color = area, alpha="Observed")) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Annual Domestic R&D Spending (Billions USD)",
+       color = "Area",
+       alpha = "Line Type",
+       title=str_wrap("Estimated Annual Domestic R&D Spending (Billions USD) as a linear function of area and year, and area:year interaction  (Model 3)", width = 60))+
+  scale_color_manual(values = colorpallate)+
+  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+  scale_alpha_manual(values = c(0.5, 1))+
+theme_minimal()
+  
+# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+#Controlling legend appearance in ggplot2 with override.aes
+#July 9, 2020 ·  @aosmith16 
 
-<!-- ```{r} -->
+# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+#Teun van den Brand
+#2024/02/26
 
-<!-- tidy_mod.rd.nw.1 <- tidy(mod.rd.nw.1) -->
+```
 
-<!-- tidy_mod.rd.nw.1 <- tidy_mod.rd.nw.1 %>% mutate(Model = "Model 1") -->
 
-<!-- combined_models <- bind_rows(tidy_mod.rd.nw.1) -->
+ 
+```{r}
+predicted <- predict(mod.rd.4 , type = "response")
 
-<!-- formatted_table <- combined_models %>% -->
+ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_dollars, color = area, alpha="Observed")) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Annual Domestic R&D Spending (Billions USD)",
+       color = "Area",
+       alpha = "Line Type",
+       title=str_wrap("Estimated Annual Domestic R&D Spending (Billions USD) as a linear function of area and year, and area:year interaction, adjusted for GDP growth per capita (Model 4)", width = 60))+
+  scale_color_manual(values = colorpallate)+
+  geom_line(aes(x=year, y=predicted, alpha= "Fitted"))+
+  scale_alpha_manual(values = c(0.5, 1))+
+theme_minimal()
+  
+# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+#Controlling legend appearance in ggplot2 with override.aes
+#July 9, 2020 ·  @aosmith16 
 
-<!--   select(Model, term, estimate, std.error, statistic, p.value) %>% -->
+# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+#Teun van den Brand
+#2024/02/26
 
-<!--   pivot_wider(names_from = Model, values_from = c(estimate, std.error, statistic, p.value)) -->
-
-<!-- ``` -->
-
-<!-- ```{r} -->
-
-<!-- formatted_table -->
-
-<!-- ``` -->
+```
 
 ```{r}
 stargazer(mod.rd.1, mod.rd.2, mod.rd.3, mod.rd.4, title="Models of R&D Spending (Not Adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/rdmodelsNonAdjusted.htm",
-          covariate.labels = c("US", "Annual GDP Growth Rate", "Years After 2004", "US:Years After 2004", "Intercept"),
+          covariate.labels = c("US (β<sub>1</sub>)", "Annual GDP Growth Rate Per Capita (β<sub>2</sub>)", "Years After 2004 (β<sub>3</sub>)", "US:Years After 2004 (β<sub>4</sub>)", "Intercept (β<sub>0</sub>)"),
           dep.var.labels=c("Annual R&D Spending (Billion USD)"))
 ```
 
+
+
+
+
+
+
 ```{r}
 stargazer(mod.rd.nw.1, mod.rd.nw.2, mod.rd.nw.3, mod.rd.nw.4, title="Newey-West Adjusted Models of R&D Spending", align=TRUE, type = "html", out="Final Models Formatted/rdmodels.htm",
-          covariate.labels = c("US", "Annual GDP Growth Rate", "Years After 2004", "US:Years After 2004", "Intercept"),
-          ci = TRUE,
-          #column.labels = c( "Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
-          digits = 2,
+          covariate.labels = c("US (β<sub>1</sub>)", "Annual GDP Growth Rate Per Capita (β<sub>2</sub>)", "Years After 2004 (β<sub>3</sub>)", "US:Years After 2004 (β<sub>4</sub>)", "Intercept (β<sub>0</sub>)"),
           dep.var.labels=c("Annual R&D Spending (Billion USD)"))
 ```
 
 # Number of Orphan Drug Market Authorization Models
 
-## Freq of orphan drug mas by Domestic R&D, Area, and interaction, year
+## Freq of orphan drug mas by US over time - no interaction
 
 ```{r}
-mod.od.1 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df)
-summary(mod.od.1)
+mod.od.1 <- lm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df)
 
 residuals <- resid(mod.od.1)
 plot(residuals)
 
 acf(residuals)
 pacf(residuals)
- 
+
 mod.od.1.vcov <- vcovPL(mod.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.od.nw.1 <- coeftest(mod.od.1, vcov = mod.od.1.vcov) 
+mod.od.nw.1 <-coeftest(mod.od.1, vcov = mod.od.1.vcov)
 mod.od.nw.1
 
 confint(mod.od.nw.1)
-
 ```
 
-<!-- plm package -->
-
-<!-- ```{r} -->
-
-<!-- mod.rd.od <- plm(freq_orphan_drugs ~ as.numeric(annual_domestic_RD_spending_dollars) + as.factor(area) + as.factor(area)*as.numeric(annual_domestic_RD_spending_dollars), data=combined_rd_od_df, model="pooling") -->
-
-<!-- #summary(mod.rd.od, vcov = vcovNW) -->
-
-<!-- coeftest(mod.rd.od, vcov.=vcovNW) -->
-
-<!-- ``` -->
-
--   take out interaction and see what the indicator is
--   then put in year as a factor
-
-## Freq of orphan drug mas by Domestic R&D, Area, and interaction and GDP growth rate
+## Freq of orphan drug mas by US over time - interaction
 
 ```{r}
-mod.od.2 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df)
-summary(mod.od.2)
+mod.od.2 <- lm(freq_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
 
 residuals <- resid(mod.od.2)
 plot(residuals)
@@ -775,26 +850,16 @@ acf(residuals)
 pacf(residuals)
 
 mod.od.2.vcov <- vcovPL(mod.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.od.nw.2 <- coeftest(mod.od.2, vcov = mod.od.2.vcov)
+mod.od.nw.2 <-coeftest(mod.od.2, vcov = mod.od.2.vcov)
 mod.od.nw.2
-confint(mod.od.nw.2)
 
+confint(mod.od.nw.2)
 ```
 
-With 95% confidence, after adjusting for annual R&D spending and annual
-GDP growth rate, a one-year increase is associated with between a
-further 1.19 and 7 million dollar increase in the number of
-market-authorized orphan drugs compared to the EU
-
-With 95% confidence, after adjusting for annual R&D spending and annual
-GDP growth rate, a one-year increase is associated with between a
-further 1.19 and 7 million dollar increase in the number of
-market-authorized orphan drugs compared to the EU
-
-## Freq of orphan drug mas by Domestic R&D in the US with GDP growth, no area/ spending interaction
+## Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
 
 ```{r}
-mod.od.3 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df)
+mod.od.3 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
 summary(mod.od.3)
 
 residuals <- resid(mod.od.3)
@@ -810,10 +875,10 @@ mod.od.nw.3
 confint(mod.od.nw.3)
 ```
 
-## Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+## Freq of orphan drug mas by Domestic R&D, Area, and interaction, year
 
 ```{r}
-mod.od.4 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+mod.od.4 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df)
 summary(mod.od.4)
 
 residuals <- resid(mod.od.4)
@@ -821,99 +886,12 @@ plot(residuals)
 
 acf(residuals)
 pacf(residuals)
-
+ 
 mod.od.4.vcov <- vcovPL(mod.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.od.nw.4 <-coeftest(mod.od.4, vcov = mod.od.4.vcov)
+mod.od.nw.4 <- coeftest(mod.od.4, vcov = mod.od.4.vcov) 
 mod.od.nw.4
 
 confint(mod.od.nw.4)
-```
-
-## Freq of orphan drug mas by US over time - no interaction
-
-```{r}
-mod.od.5 <- lm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df)
-
-residuals <- resid(mod.od.5)
-plot(residuals)
-
-acf(residuals)
-pacf(residuals)
-
-mod.od.5.vcov <- vcovPL(mod.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.od.nw.5 <-coeftest(mod.od.5, vcov = mod.od.5.vcov)
-mod.od.nw.5
-
-confint(mod.od.nw.5)
-```
-
-## Freq of orphan drug mas by US over time - interaction
-
-```{r}
-mod.od.6 <- lm(freq_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
-
-residuals <- resid(mod.od.6)
-plot(residuals)
-
-acf(residuals)
-pacf(residuals)
-
-mod.od.6.vcov <- vcovPL(mod.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.od.nw.6 <-coeftest(mod.od.6, vcov = mod.od.6.vcov)
-mod.od.nw.6
-
-confint(mod.od.nw.6)
-```
-
-```{r}
-aic_values <- round(c(AIC(mod.od.5), AIC(mod.od.6), AIC(mod.od.4), AIC(mod.od.1), AIC(mod.od.3), AIC(mod.od.2) ))
-
-stargazer(mod.od.5, mod.od.6, mod.od.4, mod.od.1, mod.od.3, mod.od.2, title="Models of Orphan Drug Market Authorizations (Not Adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
-          dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values))
-          )
-```
-
-```{r}
-#creating shorter names because stargazer has a length limit for the input of all models
-
-m1 <- mod.od.nw.1
-m2 <- mod.od.nw.2
-m3 <- mod.od.nw.3
-m4 <- mod.od.nw.4
-m5 <- mod.od.nw.5 
-m6 <- mod.od.nw.6
-
-aic_values <- round(c(AIC(m5), AIC(m6), AIC(m4), AIC(m1), AIC(m3), AIC(m2) ))
-
-
-stargazer(m5,m6,m4,m1,m3,m2, title="Newey-West Adjusted Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
-          dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values))
-          )
-```
-
-# Number of Market Authorizations for NEW Orphan Drugs Models
-
-## Freq of mas for NEW orphan drugs by Domestic R&D, Area, and interaction, year
-
-```{r}
-mod.new.od.1 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df)
-summary(mod.new.od.1)
-
-residuals <- resid(mod.new.od.1)
-plot(residuals)
-
-acf(residuals)
-pacf(residuals)
-
-mod.new.od.1.vcov <- vcovPL(mod.new.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.new.od.nw.1 <-coeftest(mod.new.od.1, vcov = mod.new.od.1.vcov)
-mod.new.od.nw.1
-
-confint(mod.new.od.nw.1)
 
 ```
 
@@ -932,23 +910,45 @@ confint(mod.new.od.nw.1)
 -   take out interaction and see what the indicator is
 -   then put in year as a factor
 
-## Freq of mas for NEW orphan drugs by Domestic R&D, Area, and interaction and GDP growth rate
+## Freq of orphan drug mas by Domestic R&D in the US with GDP growth, no area/ spending interaction
 
 ```{r}
-mod.new.od.2 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df)
-summary(mod.new.od.2)
+mod.od.5 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df)
+summary(mod.od.5)
 
-residuals <- resid(mod.new.od.2)
-plot(residuals)
+residuals <- resid(mod.od.5)
 
-acf(residuals)
-pacf(residuals)
+plot(combined_rd_ma_df$year, residuals, xlab="Year", main="Model 5 Residuals", ylab="Residuals")
 
-mod.new.od.2.vcov <- vcovPL(mod.new.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.new.od.nw.2 <-coeftest(mod.new.od.2, vcov = mod.new.od.2.vcov)
-mod.new.od.nw.2
+acf(residuals, main="ACF of Model 5 Residuals")
+pacf(residuals, main="PACF of Model 5 Residuals")
 
-confint(mod.new.od.nw.2)
+
+mod.od.5.vcov <- vcovPL(mod.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.nw.5 <-coeftest(mod.od.5, vcov = mod.od.5.vcov)
+mod.od.nw.5
+
+confint(mod.od.nw.5)
+```
+
+## Freq of orphan drug mas by Domestic R&D, Area, and interaction and GDP growth rate
+
+```{r}
+mod.od.6 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df)
+summary(mod.od.6)
+
+residuals <- resid(mod.od.6)
+plot(combined_rd_ma_df$year, residuals, xlab="Year", main="Model 6 Residuals", ylab="Residuals")
+
+acf(residuals, main="ACF of Model 6 Residuals")
+pacf(residuals, main="PACF of Model 6 Residuals")
+
+
+
+mod.od.6.vcov <- vcovPL(mod.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.nw.6<- coeftest(mod.od.6, vcov = mod.od.6.vcov)
+mod.od.nw.6
+confint(mod.od.nw.6)
 
 ```
 
@@ -962,10 +962,144 @@ GDP growth rate, a one-year increase is associated with between a
 further 1.19 and 7 million dollar increase in the number of
 market-authorized orphan drugs compared to the EU
 
-## Freq of mas for NEW orphan drug by Domestic R&D in the US with GDP growth, no area/ spending interaction
+
 
 ```{r}
-mod.new.od.3 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df)
+combined_rd_ma_df
+```
+
+
+
+
+```{r}
+predicted <- predict(mod.od.5 , type = "response")
+
+ggplot(combined_rd_ma_df, aes(x = yearsafter2004, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Number of Annual Orphan Drug Market Authorizations",
+       color = "Area",
+       alpha = "Line Type",
+       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Linear Model 5", width = 60))+
+  scale_color_manual(values = colorpallate)+
+  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+  scale_alpha_manual(values = c(0.5, 1))+
+theme_minimal()
+  
+# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+#Controlling legend appearance in ggplot2 with override.aes
+#July 9, 2020 ·  @aosmith16 
+
+# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+#Teun van den Brand
+#2024/02/26
+
+```
+
+```{r}
+predicted <- predict(mod.od.6 , type = "response")
+
+ggplot(combined_rd_ma_df, aes(x = yearsafter2004, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Number of Annual Orphan Drug Market Authorizations",
+       color = "Area",
+       alpha = "Line Type",
+       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Linear Model 6", width = 60))+
+  scale_color_manual(values = colorpallate)+
+  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+  scale_alpha_manual(values = c(0.5, 1))+
+theme_minimal()
+  
+# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+#Controlling legend appearance in ggplot2 with override.aes
+#July 9, 2020 ·  @aosmith16 
+
+# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+#Teun van den Brand
+#2024/02/26
+
+```
+
+```{r}
+aic_values <- round(c(AIC(mod.od.1), AIC(mod.od.2), AIC(mod.od.3), AIC(mod.od.4), AIC(mod.od.5), AIC(mod.od.6) ))
+
+stargazer(mod.od.1, mod.od.2, mod.od.3, mod.od.4, mod.od.5, mod.od.6, title="Models of Orphan Drug Market Authorizations (Not Adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+          dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
+          add.lines = list(c("AIC", aic_values))
+          )
+```
+```{r}
+mod.od.nw.3
+```
+
+
+```{r}
+#creating shorter names because stargazer has a length limit for the input of all models
+
+m1 <- mod.od.nw.1
+m2 <- mod.od.nw.2
+m3 <- mod.od.nw.3
+m4 <- mod.od.nw.4
+m5 <- mod.od.nw.5 
+m6 <- mod.od.nw.6
+
+aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
+
+
+stargazer(m1,m2,m3,m4,m5,m6, title="Newey-West Adjusted Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodels.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+          dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
+          add.lines = list(c("AIC", aic_values))
+          )
+```
+
+# Number of Market Authorizations for NEW Orphan Drugs Models
+
+
+## Freq of mas for NEW orphan drugs by US over time - no interaction
+
+```{r}
+mod.new.od.1 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df)
+
+residuals <- resid(mod.new.od.1)
+plot(residuals)
+
+acf(residuals)
+pacf(residuals)
+
+mod.new.od.1.vcov <- vcovPL(mod.new.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.1 <-coeftest(mod.new.od.1, vcov = mod.new.od.1.vcov)
+mod.new.od.nw.1
+
+confint(mod.new.od.nw.1)
+```
+
+## Freq of NEW orphan drugs mas by US over time - interaction
+
+```{r}
+mod.new.od.2 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+
+residuals <- resid(mod.new.od.2)
+plot(residuals)
+
+acf(residuals)
+pacf(residuals)
+
+
+mod.new.od.2.vcov <- vcovPL(mod.new.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.new.od.nw.2 <-coeftest(mod.new.od.2, vcov = mod.new.od.2.vcov)
+mod.new.od.nw.2
+
+
+confint(mod.new.od.nw.2)
+```
+
+## Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+
+```{r}
+mod.new.od.3 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
 summary(mod.new.od.3)
 
 residuals <- resid(mod.new.od.3)
@@ -974,6 +1108,7 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
+
 mod.new.od.3.vcov <- vcovPL(mod.new.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 mod.new.od.nw.3 <-coeftest(mod.new.od.3, vcov = mod.new.od.3.vcov)
 mod.new.od.nw.3
@@ -981,10 +1116,10 @@ mod.new.od.nw.3
 confint(mod.new.od.nw.3)
 ```
 
-## Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+## Freq of mas for NEW orphan drugs by Domestic R&D, Area, and interaction, year
 
 ```{r}
-mod.new.od.4 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+mod.new.od.4 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df)
 summary(mod.new.od.4)
 
 residuals <- resid(mod.new.od.4)
@@ -993,18 +1128,34 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-
 mod.new.od.4.vcov <- vcovPL(mod.new.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 mod.new.od.nw.4 <-coeftest(mod.new.od.4, vcov = mod.new.od.4.vcov)
 mod.new.od.nw.4
 
 confint(mod.new.od.nw.4)
+
 ```
 
-## Freq of mas for NEW orphan drugs by US over time - no interaction
+<!-- plm package -->
+
+<!-- ```{r} -->
+
+<!-- mod.rd.od <- plm(freq_orphan_drugs ~ as.numeric(annual_domestic_RD_spending_dollars) + as.factor(area) + as.factor(area)*as.numeric(annual_domestic_RD_spending_dollars), data=combined_rd_od_df, model="pooling") -->
+
+<!-- #summary(mod.rd.od, vcov = vcovNW) -->
+
+<!-- coeftest(mod.rd.od, vcov.=vcovNW) -->
+
+<!-- ``` -->
+
+-   take out interaction and see what the indicator is
+-   then put in year as a factor
+
+## Freq of mas for NEW orphan drug by Domestic R&D in the US with GDP growth, no area/ spending interaction
 
 ```{r}
-mod.new.od.5 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df)
+mod.new.od.5 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df)
+summary(mod.new.od.5)
 
 residuals <- resid(mod.new.od.5)
 plot(residuals)
@@ -1019,10 +1170,11 @@ mod.new.od.nw.5
 confint(mod.new.od.nw.5)
 ```
 
-## Freq of NEW orphan drugs mas by US over time - interaction
+## Freq of mas for NEW orphan drugs by Domestic R&D, Area, and interaction and GDP growth rate
 
 ```{r}
-mod.new.od.6 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+mod.new.od.6 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df)
+summary(mod.new.od.6)
 
 residuals <- resid(mod.new.od.6)
 plot(residuals)
@@ -1030,14 +1182,28 @@ plot(residuals)
 acf(residuals)
 pacf(residuals)
 
-
 mod.new.od.6.vcov <- vcovPL(mod.new.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 mod.new.od.nw.6 <-coeftest(mod.new.od.6, vcov = mod.new.od.6.vcov)
 mod.new.od.nw.6
 
-
 confint(mod.new.od.nw.6)
+
 ```
+
+With 95% confidence, after adjusting for annual R&D spending and annual
+GDP growth rate, a one-year increase is associated with between a
+further 1.19 and 7 million dollar increase in the number of
+market-authorized orphan drugs compared to the EU
+
+With 95% confidence, after adjusting for annual R&D spending and annual
+GDP growth rate, a one-year increase is associated with between a
+further 1.19 and 7 million dollar increase in the number of
+market-authorized orphan drugs compared to the EU
+
+
+
+
+
 
 ```{r}
 #creating shorter names because stargazer has a length limit for the input of all models
@@ -1049,11 +1215,11 @@ m4 <- mod.new.od.4
 m5 <- mod.new.od.5 
 m6 <- mod.new.od.6
 
-aic_values <- round(c(AIC(m5), AIC(m6), AIC(m4), AIC(m1), AIC(m3), AIC(m2) ))
+aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
 
 
-stargazer(m5, m6, m4, m1, m3, m2, title="Models of Market Authorizations for NEW Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1, m2, m3, m4, m5, m6, title="Models of Market Authorizations for NEW Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
           add.lines = list(c("AIC", aic_values))
 
@@ -1070,11 +1236,11 @@ m4 <- mod.new.od.nw.4
 m5 <- mod.new.od.nw.5 
 m6 <- mod.new.od.nw.6
 
-aic_values <- round(c(AIC(m5), AIC(m6), AIC(m4), AIC(m1), AIC(m3), AIC(m2) ))
+aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
 
 
-stargazer(m5, m6, m4, m1, m3, m2, title="Newey-West Adjusted Models of Market Authorizations for NEW Orphan Drugs", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1, m2, m3, m4, m5, m6, title="Newey-West Adjusted Models of Market Authorizations for NEW Orphan Drugs", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodels.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
           add.lines = list(c("AIC", aic_values)))
 ```
@@ -1139,23 +1305,79 @@ mean(subset(combined_rd_ma_df ,area=="EU")$freq_new_orphan_drug_mas)
 
 # Poisson Models for Number of Orphan Drug Market Authorization Models
 
-## Poisson model of Freq of orphan drug mas by Domestic R&D, Area, and interaction, year
+## Poisson Model for Freq of orphan drug mas by US over time - no interaction
 
 ```{r}
-mod.pois.od.1 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.od.1)
+mod.pois.od.1 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
 
 residuals <- resid(mod.pois.od.1)
 plot(residuals)
 
 acf(residuals)
 pacf(residuals)
- 
+
 mod.pois.od.1.vcov <- vcovPL(mod.pois.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 mod.pois.od.nw.1 <- coeftest(mod.pois.od.1, vcov = mod.pois.od.1.vcov)
 mod.pois.od.nw.1
 
 confint(mod.pois.od.nw.1)
+```
+
+## Poisson Model For Freq of orphan drug mas by US over time - interaction
+
+```{r}
+mod.pois.od.2 <- glm(freq_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
+
+residuals <- resid(mod.pois.od.2)
+plot(residuals)
+
+acf(residuals)
+pacf(residuals)
+
+mod.pois.od.2.vcov <- vcovPL(mod.pois.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.2 <- coeftest(mod.pois.od.2, vcov = mod.pois.od.2.vcov)
+mod.pois.od.nw.2
+
+confint(mod.pois.od.nw.2)
+```
+
+
+## Poisson Model of Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+
+```{r}
+mod.pois.od.3 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df , family=poisson(link="log"))
+summary(mod.pois.od.3)
+
+residuals <- resid(mod.pois.od.3)
+plot(residuals)
+
+acf(residuals)
+pacf(residuals)
+
+mod.pois.od.3.vcov <- vcovPL(mod.pois.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.3 <- coeftest(mod.pois.od.3, vcov = mod.pois.od.3.vcov)
+mod.pois.od.nw.3
+
+confint(mod.pois.od.nw.3)
+```
+
+## Poisson model of Freq of orphan drug mas by Domestic R&D, Area, and interaction, year
+
+```{r}
+mod.pois.od.4 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df, family=poisson(link="log")) 
+summary(mod.pois.od.4)
+
+residuals <- resid(mod.pois.od.4)
+plot(residuals)
+
+acf(residuals)
+pacf(residuals)
+ 
+mod.pois.od.4.vcov <- vcovPL(mod.pois.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.pois.od.nw.4 <- coeftest(mod.pois.od.4, vcov = mod.pois.od.4.vcov)
+mod.pois.od.nw.4
+
+confint(mod.pois.od.nw.4)
 
 ```
 
@@ -1174,75 +1396,19 @@ confint(mod.pois.od.nw.1)
 -   take out interaction and see what the indicator is
 -   then put in year as a factor
 
-## Poisson model of Freq of orphan drug mas by Domestic R&D, Area, and interaction and GDP growth rate
-
-```{r}
-mod.pois.od.2 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.od.2)
-
-residuals <- resid(mod.pois.od.2)
-plot(residuals)
-
-acf(residuals)
-pacf(residuals)
-
- 
-mod.pois.od.2.vcov <- vcovPL(mod.pois.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.pois.od.nw.2 <- coeftest(mod.pois.od.2, vcov = mod.pois.od.2.vcov)
-mod.pois.od.nw.2
-
-confint(mod.pois.od.nw.2)
-
-```
 
 ## Poisson model of Freq of orphan drug mas by Domestic R&D in the US with GDP growth, no area/ spending interaction
 
 ```{r}
-mod.pois.od.3 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.od.3)
-
-residuals <- resid(mod.pois.od.3)
-plot(residuals)
-
-acf(residuals)
-pacf(residuals)
-
-mod.pois.od.3.vcov <- vcovPL(mod.pois.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.pois.od.nw.3 <- coeftest(mod.pois.od.3, vcov = mod.pois.od.3.vcov)
-mod.pois.od.nw.3
-
-confint(mod.pois.od.nw.3)
-```
-
-## Poisson Model of Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
-
-```{r}
-mod.pois.od.4 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df , family=poisson(link="log"))
-summary(mod.pois.od.4)
-
-residuals <- resid(mod.pois.od.4)
-plot(residuals)
-
-acf(residuals)
-pacf(residuals)
-
-mod.pois.od.4.vcov <- vcovPL(mod.pois.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.pois.od.nw.4 <- coeftest(mod.pois.od.4, vcov = mod.pois.od.4.vcov)
-mod.pois.od.nw.4
-
-confint(mod.pois.od.nw.4)
-```
-
-## Poisson Model for Freq of orphan drug mas by US over time - no interaction
-
-```{r}
-mod.pois.od.5 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
+mod.pois.od.5 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df, family=poisson(link="log")) 
+summary(mod.pois.od.5)
 
 residuals <- resid(mod.pois.od.5)
-plot(residuals)
+plot(combined_rd_ma_df$year, residuals, xlab="Year", main="Model 5 Residuals", ylab="Residuals")
 
-acf(residuals)
-pacf(residuals)
+acf(residuals, main="ACF of Model 5 Residuals")
+pacf(residuals, main="PACF of Model 5 Residuals")
+
 
 mod.pois.od.5.vcov <- vcovPL(mod.pois.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 mod.pois.od.nw.5 <- coeftest(mod.pois.od.5, vcov = mod.pois.od.5.vcov)
@@ -1251,22 +1417,84 @@ mod.pois.od.nw.5
 confint(mod.pois.od.nw.5)
 ```
 
-## Poisson Model For Freq of orphan drug mas by US over time - interaction
+## Poisson model of Freq of orphan drug mas by Domestic R&D, Area, and interaction and GDP growth rate
 
 ```{r}
-mod.pois.od.6 <- glm(freq_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
+mod.pois.od.6 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df, family=poisson(link="log")) 
+summary(mod.pois.od.6)
 
 residuals <- resid(mod.pois.od.6)
-plot(residuals)
+residuals <- resid(mod.pois.od.5)
+plot(combined_rd_ma_df$year, residuals, xlab="Year", main="Model 6 Residuals", ylab="Residuals")
 
-acf(residuals)
-pacf(residuals)
+acf(residuals, main="ACF of Model 6 Residuals")
+pacf(residuals, main="PACF of Model 6 Residuals")
 
+
+ 
 mod.pois.od.6.vcov <- vcovPL(mod.pois.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 mod.pois.od.nw.6 <- coeftest(mod.pois.od.6, vcov = mod.pois.od.6.vcov)
 mod.pois.od.nw.6
 
 confint(mod.pois.od.nw.6)
+
+```
+
+
+
+
+
+
+
+
+```{r}
+predicted <- predict(mod.pois.od.5 , type = "response")
+
+ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Annual Domestic R&D Spending (Billions USD)",
+       color = "Area",
+       alpha = "Line Type",
+       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Poisson Model 5", width = 60))+
+  scale_color_manual(values = colorpallate)+
+  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+  scale_alpha_manual(values = c(0.5, 1))+
+theme_minimal()
+  
+# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+#Controlling legend appearance in ggplot2 with override.aes
+#July 9, 2020 ·  @aosmith16 
+
+# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+#Teun van den Brand
+#2024/02/26
+
+```
+
+```{r}
+predicted <- predict(mod.pois.od.6 , type = "response")
+
+ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Annual Domestic R&D Spending (Billions USD)",
+       color = "Area",
+       alpha = "Line Type",
+       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Poisson Model 6", width = 60))+
+  scale_color_manual(values = colorpallate)+
+  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+  scale_alpha_manual(values = c(0.5, 1))+
+theme_minimal()
+  
+# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+#Controlling legend appearance in ggplot2 with override.aes
+#July 9, 2020 ·  @aosmith16 
+
+# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+#Teun van den Brand
+#2024/02/26
+
 ```
 
 ```{r}
@@ -1280,8 +1508,8 @@ m4 <- mod.pois.od.4
 m5 <- mod.pois.od.5 
 m6 <- mod.pois.od.6
 
-stargazer(m5, m6, m4, m1, m3, m2, title="Poisson Models of Orphan Drug Market Authorizations (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1, m2, m3, m4, m5, m6, title="Poisson Models of Orphan Drug Market Authorizations (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs")
           )
 ```
@@ -1296,10 +1524,10 @@ m4 <- mod.pois.od.nw.4
 m5 <- mod.pois.od.nw.5 
 m6 <- mod.pois.od.nw.6
 
-aic_values <- round(c(AIC(m5), AIC(m6), AIC(m4), AIC(m1), AIC(m3), AIC(m2) ))
+aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
 
-stargazer(m5,m6,m4,m1,m3,m2, title="Newey-West Adjusted Poisson Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1,m2,m3,m4,m5,m6, title="Newey-West Adjusted Poisson Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodels.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
           add.lines = list(c("AIC", aic_values))
 
@@ -1308,11 +1536,13 @@ stargazer(m5,m6,m4,m1,m3,m2, title="Newey-West Adjusted Poisson Models of Orphan
 
 # Poisson Models for Number of Market Authorizations for NEW Orphan Drugs
 
-## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D, Area, and interaction, year
+
+
+
+## Poisson Model for Freq of mas for NEW orphan drugs by US over time - no interaction
 
 ```{r}
-mod.pois.new.od.1 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.new.od.1)
+mod.pois.new.od.1 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
 
 residuals <- resid(mod.pois.new.od.1)
 plot(residuals)
@@ -1324,14 +1554,14 @@ mod.pois.new.od.1.vcov <- vcovPL(mod.pois.new.od.1, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.1 <- coeftest(mod.pois.new.od.1, vcov = mod.pois.new.od.1.vcov)
 mod.pois.new.od.nw.1
 
+
 confint(mod.pois.new.od.nw.1)
 ```
 
-## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D, Area, and interaction and GDP growth rate
+## Poisson Model For Freq of mas for NEW Orphan Drugs by US over time - interaction
 
 ```{r}
-mod.pois.new.od.2 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.new.od.2)
+mod.pois.new.od.2 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
 
 residuals <- resid(mod.pois.new.od.2)
 plot(residuals)
@@ -1343,14 +1573,14 @@ mod.pois.new.od.2.vcov <- vcovPL(mod.pois.new.od.2, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.2 <- coeftest(mod.pois.new.od.2, vcov = mod.pois.new.od.2.vcov)
 mod.pois.new.od.nw.2
 
-confint(mod.pois.new.od.nw.2)
 
+confint(mod.pois.new.od.nw.2)
 ```
 
-## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D in the US with GDP growth, no area/ spending interaction
+## Poisson Model of Freq of mas for NEW Orphan Drugs by Domestic R&D in the US no area/ spending interaction or gdp growth rate
 
 ```{r}
-mod.pois.new.od.3 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df, family=poisson(link="log")) 
+mod.pois.new.od.3 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df , family=poisson(link="log"))
 summary(mod.pois.new.od.3)
 
 residuals <- resid(mod.pois.new.od.3)
@@ -1363,14 +1593,14 @@ mod.pois.new.od.3.vcov <- vcovPL(mod.pois.new.od.3, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.3 <- coeftest(mod.pois.new.od.3, vcov = mod.pois.new.od.3.vcov)
 mod.pois.new.od.nw.3
 
-
 confint(mod.pois.new.od.nw.3)
 ```
 
-## Poisson Model of Freq of mas for NEW Orphan Drugs by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+
+## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D, Area, and interaction, year
 
 ```{r}
-mod.pois.new.od.4 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df , family=poisson(link="log"))
+mod.pois.new.od.4 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df, family=poisson(link="log")) 
 summary(mod.pois.new.od.4)
 
 residuals <- resid(mod.pois.new.od.4)
@@ -1386,10 +1616,12 @@ mod.pois.new.od.nw.4
 confint(mod.pois.new.od.nw.4)
 ```
 
-## Poisson Model for Freq of mas for NEW orphan drugs by US over time - no interaction
+
+## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D in the US with GDP growth, no area/ spending interaction
 
 ```{r}
-mod.pois.new.od.5 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
+mod.pois.new.od.5 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df, family=poisson(link="log")) 
+summary(mod.pois.new.od.5)
 
 residuals <- resid(mod.pois.new.od.5)
 plot(residuals)
@@ -1405,10 +1637,11 @@ mod.pois.new.od.nw.5
 confint(mod.pois.new.od.nw.5)
 ```
 
-## Poisson Model For Freq of mas for NEW Orphan Drugs by US over time - interaction
+## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D, Area, and interaction and GDP growth rate
 
 ```{r}
-mod.pois.new.od.6 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
+mod.pois.new.od.6 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df, family=poisson(link="log")) 
+summary(mod.pois.new.od.6)
 
 residuals <- resid(mod.pois.new.od.6)
 plot(residuals)
@@ -1420,9 +1653,12 @@ mod.pois.new.od.6.vcov <- vcovPL(mod.pois.new.od.6, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.6 <- coeftest(mod.pois.new.od.6, vcov = mod.pois.new.od.6.vcov)
 mod.pois.new.od.nw.6
 
-
 confint(mod.pois.new.od.nw.6)
+
 ```
+
+
+
 
 ```{r}
 
@@ -1435,8 +1671,8 @@ m4 <- mod.pois.new.od.4
 m5 <- mod.pois.new.od.5 
 m6 <- mod.pois.new.od.6
 
-stargazer(m5, m6, m4, m1, m3, m2, title="Poisson Models of Market Authorizations for NEW Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1, m2, m3, m4, m5, m6, title="Poisson Models of Market Authorizations for NEW Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorizations for NEW Orphan Drugs")
           )
 ```
@@ -1451,16 +1687,14 @@ m4 <- mod.pois.new.od.nw.4
 m5 <- mod.pois.new.od.nw.5 
 m6 <- mod.pois.new.od.nw.6
 
-aic_values <- round(c(AIC(m5), AIC(m6), AIC(m4), AIC(m1), AIC(m3), AIC(m2) ))
+aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
 
-stargazer(m5,m6,m4,m1,m3,m2, title="Newey-West Adjusted Poisson Models of Market Authorizations for NEW Orphan Drugs ", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1,m2,m3,m4,m5,m6, title="Newey-West Adjusted Poisson Models of Market Authorizations for NEW Orphan Drugs ", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodels.htm",
+          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorizations for NEW Orphan Drugs"),
           add.lines = list(c("AIC", aic_values))
           )
 ```
-
-
 
 # Stationarity Test
 
@@ -1500,18 +1734,6 @@ adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_s
 
 Augmented Dickey-Fuller test for the null that x has a unit root.
 
-
-
-
-
-
-
-
-
-
-
-
-
 # ACFs of original series
 
 ```{r}
@@ -1538,9 +1760,13 @@ pacf(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spend
 pacf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars)
 ```
 
-
 ```{r}
 sum(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas)
 ```
 
+
+
+```{r}
+combined_rd_ma_df
+```
 
