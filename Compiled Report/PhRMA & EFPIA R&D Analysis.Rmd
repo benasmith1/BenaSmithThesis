@@ -36,9 +36,10 @@ library(broom)
 library(tidyr)
 library(stargazer)
 library(PerformanceAnalytics)
-library(tseries) # to test stationarity
-
-
+library(Metrics)
+library(scales)
+library(car)
+library(glue)
 ```
 
 # Data Cleaning
@@ -47,7 +48,9 @@ library(tseries) # to test stationarity
 
 ## EFPIA R&D spending by country by year in euros
 
-From yearly pdf reports 2004: **LINK NEEDED** 2005:
+From yearly R&D reports 
+2004: Link Removed. Screenshot can be found in original data folder
+2005:
 <https://www.efpia.eu/media/15485/the-pharmaceutical-industry-in-figures-edition-2007.pdf>
 2006:
 <https://www.efpia.eu/media/15486/the-pharmaceutical-industry-in-figures-edition-2008.pdf>
@@ -59,7 +62,8 @@ From yearly pdf reports 2004: **LINK NEEDED** 2005:
 <https://www.efpia.eu/media/15489/the-pharmaceutical-industry-in-figures-edition-2011.pdf>
 2010:
 <https://www.sfee.gr/wp-content/uploads/2015/05/EFPIA_Figures_2012_Final.pdf>
-Data for 2011 could not be found 2012:
+Data for 2011 could not be found 
+2012:
 <https://www.phar-in.eu/wp-content/uploads/2014/05/Figures_2014_Final.pdf>
 2013:
 <https://www.efpia.eu/media/25822/2015-the-pharmaceutical-industry-in-figures.pdf>
@@ -120,7 +124,7 @@ Dollars to euros
 <https://www.macrotrends.net/2548/euro-dollar-exchange-rate-historical-chart>
 
 ```{r}
-usdtoeuroavgconversion <- read_xlsx("Cleaned Data/Area Level R&D Spending/USD to Euro Conversion Avg byt Year.xlsx")
+usdtoeuroavgconversion <- read_xlsx("Cleaned Data/Area Level R&D Spending/USD to Euro Conversion Avg by Year.xlsx")
 usdtoeuroavgconversion
 eurotodollars <- as.data.frame(cbind(usdtoeuroavgconversion$Year, 1/usdtoeuroavgconversion$`Average Closing Price`))
 colnames(eurotodollars) <- c("year", "euros_to_dollar_conversion")
@@ -236,14 +240,15 @@ eu_od_ma_freqs
 Graph of EU Market Authorizations orphan drugs
 
 ```{r}
+
 ggplot(eu_od_ma_freqs, aes(x = Year)) +
-  geom_line(aes(y = `Freq Orphan Drug MAs`, color="Freq Orphan Drug MAs")) +
-  geom_line(aes(y = `Freq New Orphan Drug MAs`, color="Freq New Orphan Drug MAs")) +
+  geom_line(aes(y = `Freq Orphan Drug MAs`, color="Orphan Drug MAs")) +
+  geom_line(aes(y = `Freq New Orphan Drug MAs`, color="New Orphan Drug MAs")) +
   labs(x = "Year",
-       y = "Frequency of Market Authorizations by the EFPIA",
-       title="Annual Frequencies of Market Authorizations in the EU", 
+       y = str_wrap("Annual Number of Market Authorizations in the EU", width=40),
+       title=str_wrap("Annual Number of Orphan Drug Market Authorizations in the EU", width=50)
        ) +
-  scale_color_manual(name = "Legend", values = c("Freq Orphan Drug MAs" = "#5D3A9B", "Freq New Orphan Drug MAs" = "#E66100")) +
+  scale_color_manual(name = "Legend", values = c("darkred", "dodgerblue"))+
   theme_minimal()
 ```
 
@@ -365,28 +370,13 @@ Graph of US Market Authorizations orphan drugs
 
 ```{r}
 ggplot(us_od_ma_freqs, aes(x = Year)) +
-  geom_line(aes(y = `Freq Orphan Drug MAs`, color="Freq Orphan Drug MAs")) +
-  geom_line(aes(y = `Freq New Orphan Drug MAs`, color="Freq New Orphan Drug MAs")) +
-  
-  # geom_text(aes(y = `Freq Orphan Drug MAs`, 
-  #               label = `Freq Orphan Drug MAs`, 
-  #               color = "Freq Orphan Drug MAs"), 
-  #           vjust = -2, 
-  #           size = 3) +
-  # 
-  # # Add text labels for the y-values of Freq New Orphan Drug MAs
-  # geom_text(aes(y = `Freq New Orphan Drug MAs`, 
-  #               label = `Freq New Orphan Drug MAs`, 
-  #               color = "Freq New Orphan Drug MAs"), 
-  #           vjust = 2, 
-  #           size = 3) +
-  # 
-  
+  geom_line(aes(y = `Freq Orphan Drug MAs`, color="Orphan Drug MAs")) +
+  geom_line(aes(y = `Freq New Orphan Drug MAs`, color="New Orphan Drug MAs")) +
   labs(x = "Year",
-       y = "Frequency of Market Authorizations by the FDA",
-       title="Annual Frequencies of Market Authorizations in the US", 
+       y = str_wrap("Annual Number of Market Authorizations in the US", width=40),
+       title=str_wrap("Annual Number of Orphan Drug Market Authorizations in the US", width=50), 
        ) +
-  scale_color_manual(name = "Legend", values = c('Freq Orphan Drug MAs' = '#5D3A9B', 'Freq New Orphan Drug MAs' = '#E66100')) +
+  scale_color_manual(name = "Legend", values = c("darkred", "dodgerblue"))+
   theme_minimal()
 ```
 
@@ -440,33 +430,14 @@ eu_gdp_percapita_annual <- read.csv("Original Data/GDP/european-union-gdp-per-ca
 eu_gdp_percapita_annual$year <- year(as.Date(eu_gdp_percapita_annual$date))
 eu_gdp_percapita_annual <- clean_names(eu_gdp_percapita_annual)
 colnames(eu_gdp_percapita_annual)[2] <- "gdp_per_capita_usd"
+colnames(eu_gdp_percapita_annual)[3] <- "gdp_per_capita_annual_growthrate_usd"
 eu_gdp_percapita_annual
-```
-
-# EU GDP Annual Growth Rate
-
-<https://www.macrotrends.net/global-metrics/countries/EUU/european-union/gdp-growth-rate>
-
-```{r}
-eu_gdp_growth_rate_annual <- read.csv("Original Data/GDP/european-union-gdp-growth-rate.csv", skip=16)
-
-eu_gdp_growth_rate_annual$year <- year(as.Date(eu_gdp_growth_rate_annual$date)) #format year
-
-
-eu_gdp_growth_rate_annual <- clean_names(eu_gdp_growth_rate_annual)
-
-colnames(eu_gdp_growth_rate_annual)[2] <- "gdp_growth_rate_annual"
-
-eu_gdp_growth_rate_annual$gdp_growth_rate_annual <- eu_gdp_growth_rate_annual$gdp_growth_rate_annual/100 #convert to rate instead of percent
-
-eu_gdp_growth_rate_annual
 ```
 
 Merge GDP Per Capita, GDP Growth rate into same df
 
 ```{r}
-eu_rd_mas_simplified <- merge(eu_rd_mas_simplified, eu_gdp_percapita_annual[,c("year", "gdp_per_capita_usd")], by = "year", all.x = TRUE)
-eu_rd_mas_simplified <- merge(eu_rd_mas_simplified, eu_gdp_growth_rate_annual[,c("year", "gdp_growth_rate_annual")], by = "year", all.x = TRUE)
+eu_rd_mas_simplified <- merge(eu_rd_mas_simplified, eu_gdp_percapita_annual[,c("year", "gdp_per_capita_annual_growthrate_usd")], by = "year", all.x = TRUE)
 eu_rd_mas_simplified
 ```
 
@@ -481,34 +452,20 @@ us_gdp_percapita_annual$year <- year(as.Date(us_gdp_percapita_annual$date))
 us_gdp_percapita_annual <- clean_names(us_gdp_percapita_annual)
 
 colnames(us_gdp_percapita_annual)[2] <- "gdp_per_capita_usd"
+colnames(us_gdp_percapita_annual)[3] <- "gdp_per_capita_annual_growthrate_usd"
+
 us_gdp_percapita_annual
-
-```
-
-# US GDP Annual Growth Rate
-
-<https://www.macrotrends.net/global-metrics/countries/USA/united-states/gdp-growth-rate>
-
-```{r}
-us_gdp_growth_rate_annual <- read.csv("Original Data/GDP/united-states-gdp-growth-rate.csv", skip=16)
-us_gdp_growth_rate_annual$year <- year(as.Date(us_gdp_growth_rate_annual$date))
-
-us_gdp_growth_rate_annual <- clean_names(us_gdp_growth_rate_annual)
-
-colnames(us_gdp_growth_rate_annual)[2] <- "gdp_growth_rate_annual"
-us_gdp_growth_rate_annual$gdp_growth_rate_annual <- us_gdp_growth_rate_annual$gdp_growth_rate_annual/100 #convert to rate instead of percent
-
-us_gdp_growth_rate_annual
 
 ```
 
 Merge GDP Per Capita, GDP Growth rate into same df
 
 ```{r}
-us_rd_mas_simplified <- merge(us_rd_mas_simplified, us_gdp_percapita_annual[,c("year", "gdp_per_capita_usd")], by = "year", all.x = TRUE)
-us_rd_mas_simplified <- merge(us_rd_mas_simplified, us_gdp_growth_rate_annual[,c("year", "gdp_growth_rate_annual")], by = "year", all.x = TRUE)
+us_rd_mas_simplified <- merge(us_rd_mas_simplified, us_gdp_percapita_annual[,c("year", "gdp_per_capita_annual_growthrate_usd")], by = "year", all.x = TRUE)
 us_rd_mas_simplified
 ```
+
+Limit dataframe to 2004 and later, make lagged R&D spending NA at year 2004
 
 ```{r}
 combined_rd_ma_df <- rbind(eu_rd_mas_simplified, us_rd_mas_simplified)
@@ -519,14 +476,14 @@ combined_rd_ma_df
 ```
 
 ```{r}
-colorpallate <- c("#D81B60", "#1E88E5")
+
 ggplot(combined_rd_ma_df, aes(x = annual_domestic_RD_spending_bil_dollars, y = freq_orphan_drug_mas, color = area)) +
   geom_point() +
   labs(x = "Annual Domestic RD Spending (Billions USD)",
        y = "Number of Orphan Drug Market Authorizations",
        color = "Area",
        title=str_wrap("Orphan Drug Market Authorizations by Annual Domestic R&D Spending in the EU and US", 60)) +
-  scale_color_manual(values = colorpallate)+
+  scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
   theme_minimal()
 ```
 
@@ -534,24 +491,24 @@ ggplot(combined_rd_ma_df, aes(x = annual_domestic_RD_spending_bil_dollars, y = f
 ggplot(combined_rd_ma_df, aes(x = year , y = freq_orphan_drug_mas, color = area)) +
   geom_line() +
   labs(x = "Year",
-       y = "Number of Orphan Drug Market Authorizations",
+       y = str_wrap("Annual Number of Orphan Drug Market Authorizations", width=30),
        color = "Area",
-       title="Orphan Drug Market Authorizations by Year in the EU and US") +
+       title=str_wrap("Annual Number of Orphan Drug Market Authorizations in the EU and US", width=40)) +
     theme_minimal() +
-    scale_color_manual(values = colorpallate)
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100'))
 ```
 
 ```{r}
+
 ggplot(combined_rd_ma_df, aes(x = year , y = freq_new_orphan_drug_mas, color = area)) +
   geom_line() +
   labs(x = "Year",
-       y = "Number of Market Authorizations for New Orphan Drugs",
+       y = str_wrap("Annual Number of Market Authorizations for New Orphan Drugs", width=40),
        color = "Area",
-       title="Market Authorizations for New Orphan Drugs by Year in the EU and US") +
+       title=str_wrap("Annual Number of Market Authorizations for New Orphan Drugs in the EU and US", width=40)) +
     theme_minimal() +
-    scale_color_manual(values = colorpallate)
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) 
 ```
-
 
 ```{r}
 ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_dollars, color = area)) +
@@ -560,38 +517,19 @@ ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_doll
        y = "Annual Domestic R&D Spending (Billions USD)",
        color = "Area",
        title="Annual Domestic R&D Spending by Year in the EU and US") +
-  scale_color_manual(values = colorpallate)+
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
   theme_minimal()
 ```
 
 ```{r}
-ggplot(combined_rd_ma_df, aes(x = year, y = gdp_per_capita_usd, color = area)) +
+ggplot(combined_rd_ma_df, aes(x = year, y = gdp_per_capita_annual_growthrate_usd, color = area)) +
   geom_line() +
   labs(x = "Year",
        y = "GDP Per Capita on last day of Year (USD)",
        color = "Area",
        title="GDP Per Capita on last day of Year in the EU and US") +
-  scale_color_manual(values = colorpallate)+
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
   theme_minimal()
-```
-
-```{r}
-ggplot(combined_rd_ma_df, aes(x = year, y = gdp_growth_rate_annual *100, color = area)) +
-  geom_line() +
-  labs(x = "Year",
-       y = "GDP Annual Growth Rate (%)",
-       color = "Area",
-       title="GDP Annual Growth Rate over Time In EU and US") +
-  scale_color_manual(values = colorpallate)+
-  theme_minimal()
-```
-
-```{r}
-plot(combined_rd_ma_df[,-4], col=as.factor(combined_rd_ma_df[,4]))
-```
-
-```{r}
-subset(combined_rd_ma_df, area=="US")
 ```
 
 Orphan Drug Frequencies by Year by Area
@@ -615,20 +553,16 @@ combined_rd_ma_df$yearsafter2004 <- combined_rd_ma_df$year - 2004
 combined_rd_ma_df
 ```
 
-```{r}
-17.02097/17.52581
-```
 
 # Summmaries
 
-R&D spending grpwth rates by year
+R&D spending growth rates by year
 
 ```{r}
 rdspending <- combined_rd_ma_df[combined_rd_ma_df$area == "EU", ]$annual_domestic_RD_spending_bil_dollars 
 laggedrdspending <- combined_rd_ma_df[combined_rd_ma_df$area == "EU", ]$lagged_annual_domestic_RD_spending_bil_dollars 
 EU_annual_domestic_RD_spending_bil_dollars_growth_rate <- rdspending/laggedrdspending
 EU_annual_domestic_RD_spending_bil_dollars_growth_rate
-
 
 
 rdspending <- combined_rd_ma_df[combined_rd_ma_df$area == "US", ]$annual_domestic_RD_spending_bil_dollars 
@@ -649,45 +583,101 @@ rdspending_growth_rates[rdspending_growth_rates$Year == 2012,]$EU <- "NA"
 
 rdspending_growth_rates
 
-stargazer(rdspending_growth_rates, title="R&D Spending in USD Annual Growth Rates in the EU and US", align=TRUE, type = "html", out="Final Figures Formatted/RDSpendingAnnualGrowthRates.htm", summary = FALSE, digits=2, digit.separator="", rownames = FALSE)
 ```
 
-```{r}
-rdspending_growth_rates
-colnames(rdspending_growth_rates) <- c("Year", "US", "EU")
-```
 
 ```{r}
-
 stargazer(rdspending_growth_rates,  out="Final Figures Formatted/RDSpendingAnnualGrowthRates.htm" , summary=FALSE, rownames=FALSE, colnames = TRUE, digits=2, digit.separator="",column.sep.width= "15pt", title="Annual Growth Rate of Phramaceutical R&D Spending")
 ```
 
+# Linear Models of Annual Domestic R&D Spending
+
+Plot Linear Models of Annual Domestic R&D Spending
+```{r}
+plot_linear_rd <- function(linear_model, model_number){
+  
+  #Plot residuals and acf/ pacf of residuals by panel (EU/US)
+  combined_rd_ma_df$residuals <- resid(linear_model)
+  par(mfrow =c(2,4))
+  
+  us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
+  eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
+  
+  plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="US Residuals", ylab="Residuals")
+  acf(us_resid_data$residuals, main="ACF of US Residuals")
+  pacf(us_resid_data$residuals, main="PACF of US Residuals")
+  qqnorm(us_resid_data$residuals, main = "QQ Plot of US Residuals")
+  
+  
+  plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="EU Residuals", ylab="Residuals")
+  acf(eu_resid_data$residuals, main="ACF of EU Residuals")
+  pacf(eu_resid_data$residuals, main="PACF of EU Residuals")
+  qqnorm(eu_resid_data$residuals, main = "QQ Plot of EU Residuals")
+  
+  mtext(glue('Linear Model {model_number} of Annual Domestic R&D Spending - Residual Plots'), side = 3, line = -1.1, outer = TRUE)
+
+  predicted <- predict(linear_model , type = "response")
+
+  ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_dollars, color = area, alpha="Observed")) +
+    geom_point() +
+    labs(x = "Year",
+         y = "Annual Domestic R&D Spending (Billions USD)",
+         color = "Area",
+         alpha = "Line Type",
+         title=glue('Linear Model {model_number} of Annual Domestic R&D Spending'))+
+      scale_color_manual(name = "Area", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
+    geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+    scale_alpha_manual(values = c(0.5, 1))+
+  theme_minimal()
+    
+  # https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+  #Controlling legend appearance in ggplot2 with override.aes
+  #July 9, 2020 ·  @aosmith16 
+  
+  # https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+  # Teun van den Brand
+  # 2024/02/26
+
+}
+```
 
 
-# R&D Models
+```{r}
 
-## Model of R&D Spending by area
+get_rd_model_metrics <- function(model, model_type){
+  #Get RMSE
+  predicted <- predict(model, type = "response")
+  actual <- combined_rd_ma_df$annual_domestic_RD_spending_bil_dollars
+  model_rmse <- rmse(actual=actual, predicted=predicted)
+
+  model_df1 <- summary(model)$fstatistic[2]
+  model_df2 <- summary(model)$fstatistic[3]
+  model_fstat <- summary(model)$fstatistic[1]
+  model_pval <- pf(summary(model)$fstatistic[1], summary(model)$fstatistic[2], summary(model)$fstatistic[3], lower.tail = FALSE) 
+  # https://www.reneshbedre.com/blog/get-f-stat-p-value-from-lm.html
+  # Renesh Bedre
+  # March 26, 2023
+    
+  model_adjRsq <- summary(model)$adj.r.squared
+  model_aic <- AIC(model)
+  
+  metrics_df <- data.frame("rmse" = model_rmse, "aic"= model_aic, "df1" = model_df1, "df2" = model_df2, "fstat" = model_fstat, "pval" = model_pval, "adjrsq" = model_adjRsq)
+  rownames(metrics_df) <- NULL
+
+  return(metrics_df)
+}
+
+```
+
+
+
+## Linear Model 1 of Annual Domestic R&D Spending
 
 ```{r}
 mod.rd.1 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) , data=combined_rd_ma_df)
 summary(mod.rd.1)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.rd.1)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 1 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 1 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 1 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 1 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 1 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 1 EU Residuals")
-mtext("Linear Model 1 of R&D Spending", side = 3, line = -1.1, outer = TRUE)
+plot_linear_rd(mod.rd.1, "1")
 
 #Estimate covariance matrix with Newey West
 mod.rd.1.vcov <- vcovPL(mod.rd.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
@@ -696,29 +686,22 @@ mod.rd.1.vcov <- vcovPL(mod.rd.1, cluster = ~ as.factor(combined_rd_ma_df$area),
 mod.rd.nw.1 <- coeftest(mod.rd.1, vcov = mod.rd.1.vcov) 
 mod.rd.nw.1
 
+confint(mod.rd.nw.1)
+
+#Get Metrics
+mod.rd.1.metrics <- get_rd_model_metrics(mod.rd.1, "Linear")
+
 ```
 
-## Model of R&D spending by country and year without interaction
+
+
+## Linear Model 2 of Annual Domestic R&D Spending
 
 ```{r}
 mod.rd.2 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) + yearsafter2004, data=combined_rd_ma_df)
 summary(mod.rd.2)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.rd.2)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 2 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 2 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 2 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 2 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 2 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 2 EU Residuals")
-mtext("Linear Model 2 of R&D Spending", side = 3, line = -1.1, outer = TRUE)
+plot_linear_rd(mod.rd.2, "2")
 
 #Estimate covariance matrix with Newey West
 mod.rd.2.vcov <- vcovPL(mod.rd.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
@@ -727,179 +710,255 @@ mod.rd.2.vcov <- vcovPL(mod.rd.2, cluster = ~ as.factor(combined_rd_ma_df$area),
 mod.rd.nw.2 <- coeftest(mod.rd.2, vcov = mod.rd.2.vcov) 
 mod.rd.nw.2
 
+confint(mod.rd.nw.2)
 
+#Get Metrics
+mod.rd.2.metrics <- get_rd_model_metrics(mod.rd.2, "Linear")
 
 ```
 
-## Model of R&D spending by country and year with interaction
+## Linear Model 3 of Annual Domestic R&D Spending
 
 ```{r}
-mod.rd.3 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) * yearsafter2004, data=combined_rd_ma_df)
+mod.rd.3 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) + gdp_per_capita_annual_growthrate_usd + yearsafter2004, data=combined_rd_ma_df)
 summary(mod.rd.3)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.rd.3)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 3 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 3 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 3 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 3 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 3 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 3 EU Residuals")
-mtext("Linear Model 3 of R&D Spending", side = 3, line = -1.1, outer = TRUE)
+plot_linear_rd(mod.rd.3, "3")
 
 #Estimate covariance matrix with Newey West
-mod.rd.3.vcov <- vcovPL(mod.rd.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
+mod.rd.3.vcov <- vcovPL(mod.rd.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")
 
 #Adjust standard errors based on estimated covariance matrix
-mod.rd.nw.3 <- coeftest(mod.rd.3, vcov = mod.rd.3.vcov) 
+mod.rd.nw.3 <- coeftest(mod.rd.3, vcov = mod.rd.3.vcov)
 mod.rd.nw.3
 
-```
+confint(mod.rd.nw.3)
 
-
-
-```{r}
-predicted <- predict(mod.rd.3 , type = "response")
-
-ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_dollars, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Annual Domestic R&D Spending (Billions USD)",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Estimated Annual Domestic R&D Spending (Billions USD) as a linear function of area and year, and area:year interaction  (Model 3)", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
+#Get Metrics
+mod.rd.3.metrics <- get_rd_model_metrics(mod.rd.3, "Linear")
 
 ```
 
-## Model of R&D spending by area and year adjusted for gdp growth rate
-
+### VIFs of preditors
 
 ```{r}
-mod.rd.4 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) + gdp_growth_rate_annual + yearsafter2004 + yearsafter2004:as.factor(area) , data=combined_rd_ma_df)
+vif(mod.rd.3)
+```
+
+
+## Linear Model 4 of Annual Domestic R&D Spending
+
+```{r}
+mod.rd.4 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) + yearsafter2004 + as.factor(area):yearsafter2004, data=combined_rd_ma_df)
 summary(mod.rd.4)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.rd.4)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 4 US  Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 4 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 4 US Residuals")
-
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 4 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 4 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 4 EU Residuals")
-mtext("Linear Model 4 of R&D Spending", side = 3, line = -1.1, outer = TRUE)
+plot_linear_rd(mod.rd.4, "4")
 
 #Estimate covariance matrix with Newey West
-mod.rd.4.vcov <- vcovPL(mod.rd.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.rd.4.vcov <- vcovPL(mod.rd.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
 
 #Adjust standard errors based on estimated covariance matrix
-mod.rd.nw.4 <- coeftest(mod.rd.4, vcov = mod.rd.4.vcov) # vcov = NeweyWest(mod.rd.4, lag = 1, prewhite = FALSE))
+mod.rd.nw.4 <- coeftest(mod.rd.4, vcov = mod.rd.4.vcov) 
 mod.rd.nw.4
+
 confint(mod.rd.nw.4)
 
+#Get Metrics
+mod.rd.4.metrics <- get_rd_model_metrics(mod.rd.4, "Linear")
+
+```
+
+
+## Linear Model 5 of Annual Domestic R&D Spending
+
+```{r}
+mod.rd.5 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) + gdp_per_capita_annual_growthrate_usd + yearsafter2004 + yearsafter2004:as.factor(area), data=combined_rd_ma_df)
+summary(mod.rd.5)
+
+plot_linear_rd(mod.rd.5, "5")
+
+#Estimate covariance matrix with Newey West
+mod.rd.5.vcov <- vcovPL(mod.rd.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+
+#Adjust standard errors based on estimated covariance matrix
+mod.rd.nw.5 <- coeftest(mod.rd.5, vcov = mod.rd.5.vcov)
+mod.rd.nw.5
+
+confint(mod.rd.nw.5)
+
+#Get RMSE
+predicted <- predict(mod.rd.5, type = "response")
+actual <- combined_rd_ma_df$annual_domestic_RD_spending_bil_dollars
+mod.rd.5.rmse <- rmse(actual=actual, predicted=predicted)
+
+#Get Metrics
+mod.rd.5.metrics <- get_rd_model_metrics(mod.rd.5, "Linear")
+
+```
+
+## Linear Model 6 of Annual Domestic R&D Spending
+
+```{r}
+mod.rd.6 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) + gdp_per_capita_annual_growthrate_usd + yearsafter2004 + yearsafter2004:as.factor(area) +  +I(yearsafter2004^2) + I(yearsafter2004^2):as.factor(area), data=combined_rd_ma_df)
+summary(mod.rd.6)
+
+plot_linear_rd(mod.rd.6, "6")
+
+#Estimate covariance matrix with Newey West
+mod.rd.6.vcov <- vcovPL(mod.rd.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+
+#Adjust standard errors based on estimated covariance matrix
+mod.rd.nw.6 <- coeftest(mod.rd.6, vcov = mod.rd.6.vcov)
+mod.rd.nw.6
+
+confint(mod.rd.nw.6)
+
+#Get Metrics
+mod.rd.6.metrics <- get_rd_model_metrics(mod.rd.6, "Linear")
+
+```
+
+
+```{r}
+mod.rd.metrics <- rbind(mod.rd.1.metrics, mod.rd.2.metrics, mod.rd.3.metrics, mod.rd.4.metrics, mod.rd.5.metrics, mod.rd.6.metrics)
+
+aic_values <- round(mod.rd.metrics$aic)
+rmse_values <- round(mod.rd.metrics$rmse, 2)
+fstat_values <- round(mod.rd.metrics$fstat, 2)
+p_values <- round(mod.rd.metrics$pval, 4)
+adjrsq_values <- round(mod.rd.metrics$adjrsq, 2)
+
+stargazer(mod.rd.1, mod.rd.2, mod.rd.3, mod.rd.4, mod.rd.5, mod.rd.6, 
+          title="Linear Models of Annual Domestic Pharmaceutical R&D Spending (Not Adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/rdmodelsNonAdjusted.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>2</sub>)", "Years After 2004 (β<sup>̂</sup><sub>3</sub>)", "Years After 2004^{2} (β<sup>̂</sup><sub>4</sub>)", "US:Years After 2004 (β<sup>̂</sup><sub>5</sub>)", "US:Years After 2004^{2} (β<sup>̂</sup><sub>6</sub>)", "Intercept (β<sup>̂</sup><sub>0</sub>)"),
+          dep.var.labels=c("Annual Domestic Pharmaceutical R&D Spending (Billion USD)"),
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "Model 6"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Adj R^{2}", adjrsq_values), c("F Statistic", fstat_values), c("p-value", p_values)))
+```
+
+```{r}
+
+#creating shorter names because stargazer has a length limit for the input of all models
+m1 <- mod.rd.nw.1 
+m2 <- mod.rd.nw.2 
+m3 <- mod.rd.nw.3
+m4 <- mod.rd.nw.4
+m5 <- mod.rd.nw.5 
+m6 <- mod.rd.nw.6
+
+stargazer(m1, m2, m3, m4, m5, m6, title="Newey-West Adjusted Linear Models of Annual Domestic Pharmaceutical R&D Spending", align=TRUE, type = "html", out="Final Models Formatted/rdmodels.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>2</sub>)", "Years After 2004 (β<sup>̂</sup><sub>3</sub>)", "Years After 2004^{2} (β<sup>̂</sup><sub>4</sub>)", "US:Years After 2004 (β<sup>̂</sup><sub>5</sub>)", "US:Years After 2004^{2} (β<sup>̂</sup><sub>6</sub>)", "Intercept (β<sup>̂</sup><sub>0</sub>)"),
+          dep.var.labels=c("Annual Domestic Pharmaceutical R&D Spending (Billion USD)"),
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "Model 6"),
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Adj R^{2}", adjrsq_values), c("F Statistic", fstat_values), c("p-value", p_values)))
 ```
 
 
 
-
- 
+# Linear Models of Number of Orphan Drug Market Authorizations
+Plot Models of Number of Orphan Drug Market Authorizations (Linear or Poisson Models)
 ```{r}
-predicted <- predict(mod.rd.4 , type = "response")
-
-ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_dollars, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Annual Domestic R&D Spending (Billions USD)",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Estimated Annual Domestic R&D Spending (Billions USD) as a linear function of area and year, and area:year interaction, adjusted for GDP growth per capita (Model 4)", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha= "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
+plot_lin_pois_od <- function(model, model_number, model_type){
   
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
+  #Plot residuals and acf/ pacf of residuals by panel (EU/US)
+  combined_rd_ma_df$residuals <- resid(model)
+  par(mfrow =c(2,4))
+  
+  us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
+  eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
+  
+  plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="US Residuals", ylab="Residuals")
+  acf(us_resid_data$residuals, main="ACF of US Residuals")
+  pacf(us_resid_data$residuals, main="PACF of US Residuals")
+  qqnorm(us_resid_data$residuals, main = "QQ Plot of US Residuals")
+  
+  plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="EU Residuals", ylab="Residuals")
+  acf(eu_resid_data$residuals, main="ACF of EU Residuals")
+  pacf(eu_resid_data$residuals, main="PACF of EU Residuals")
+  qqnorm(eu_resid_data$residuals, main = "QQ Plot of EU Residuals")
+  
+  
+  mtext(glue('{model_type} Model {model_number} of Annual Orphan Drug MAs - Residual Plots'), side = 3, line = -1.1, outer = TRUE)
 
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
+  predicted <- predict(model , type = "response")
+  
+  ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
+    geom_point() +
+    labs(x = "Year",
+         y = str_wrap("Number of Annual Orphan Drug Market Authorizations", width = 40),
+         color = "Area",
+         alpha = "Line Type",
+         title=str_wrap(glue("{model_type} Model {model_number} of Annual Orphan Drug Market Authorizations"), width = 60))+
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
+    geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+    scale_alpha_manual(values = c(0.5, 1))+
+  theme_minimal()
+    
+  # https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+  #Controlling legend appearance in ggplot2 with override.aes
+  #July 9, 2020 ·  @aosmith16 
+  
+  # https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+  #Teun van den Brand
+  #2024/02/26
 
+}
 ```
 
+Get Metrics of Models of Number of Orphan Drug Market Authorizations (Linear or Poisson Models)
 ```{r}
 
-aic_values <- round(c(AIC(mod.rd.1), AIC(mod.rd.2), AIC(mod.rd.3), AIC(mod.rd.4) ))
+get_od_model_metrics <- function(model, model_type){
+  #Get RMSE
+  predicted <- predict(model, type = "response")
+  actual <- combined_rd_ma_df$freq_orphan_drug_mas
+  model_rmse <- rmse(actual=actual, predicted=predicted)
+  
 
-stargazer(mod.rd.1, mod.rd.2, mod.rd.3, mod.rd.4, title="Models of R&D Spending (Not Adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/rdmodelsNonAdjusted.htm",
-          covariate.labels = c("US (β<sub>1</sub>)", "Annual GDP Growth Rate Per Capita (β<sub>2</sub>)", "Years After 2004 (β<sub>3</sub>)", "US:Years After 2004 (β<sub>4</sub>)", "Intercept (β<sub>0</sub>)"),
-          dep.var.labels=c("Annual R&D Spending (Billion USD)"),
-          add.lines = list(c("AIC", aic_values)))
+  model_df1 <- NA
+  model_df2 <- NA
+  model_adjRsq <- NA
+  model_fstat <- NA
+  model_pval <- NA
+  model_loglik <- NA
+  
+  if(model_type == "Linear"){
+    
+    model_df1 <- summary(model)$fstatistic[2]
+    model_df2 <- summary(model)$fstatistic[3]
+    model_fstat <- summary(model)$fstatistic[1]
+    model_pval <- pf(summary(model)$fstatistic[1], summary(model)$fstatistic[2], summary(model)$fstatistic[3], lower.tail = FALSE) 
+    # https://www.reneshbedre.com/blog/get-f-stat-p-value-from-lm.html
+    # Renesh Bedre
+    # March 26, 2023
+  
+    model_adjRsq <- summary(model)$adj.r.squared
+  }
+  
+  if(model_type == "Poisson"){
+    model_loglik <- logLik(model)
+  }
+  
+  model_aic <- AIC(model)
+  
+  metrics_df <- data.frame("rmse" = model_rmse, "aic"= model_aic, "df1" = model_df1, "df2" = model_df2, "fstat" = model_fstat, "pval" = model_pval, "adjrsq" = model_adjRsq, "LogLik" = model_loglik)
+  rownames(metrics_df) <- NULL
+
+
+  return(metrics_df)
+}
 ```
 
-
-
-
-
-
-
-```{r}
-aic_values <- round(c(AIC(mod.rd.nw.1), AIC(mod.rd.nw.2), AIC(mod.rd.nw.3), AIC(mod.rd.nw.4) ))
-
-stargazer(mod.rd.nw.1, mod.rd.nw.2, mod.rd.nw.3, mod.rd.nw.4, title="Newey-West Adjusted Models of R&D Spending", align=TRUE, type = "html", out="Final Models Formatted/rdmodels.htm",
-          covariate.labels = c("US (β<sub>1</sub>)", "Annual GDP Growth Rate Per Capita (β<sub>2</sub>)", "Years After 2004 (β<sub>3</sub>)", "US:Years After 2004 (β<sub>4</sub>)", "Intercept (β<sub>0</sub>)"),
-          dep.var.labels=c("Annual R&D Spending (Billion USD)"),
-          add.lines = list(c("AIC", aic_values)))
-```
-
-# Number of Orphan Drug Market Authorization Models
-
-## Freq of orphan drug mas by US over time - no interaction
+## Linear Model 1 of Num of Annual Orphan Drug MAs
 
 ```{r}
 mod.od.1 <- lm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df)
+summary(mod.od.1)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.od.1)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 1 US  Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 1 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 1 US Residuals")
-
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 1 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 1 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 1 EU Residuals")
-mtext("Linear Model 1 of OD MAs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_od(mod.od.1, "1", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.od.1.vcov <- vcovPL(mod.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
@@ -908,63 +967,60 @@ mod.od.1.vcov <- vcovPL(mod.od.1, cluster = ~ as.factor(combined_rd_ma_df$area),
 mod.od.nw.1 <-coeftest(mod.od.1, vcov = mod.od.1.vcov)
 mod.od.nw.1
 
+#Get RMSE
+predicted <- predict(mod.od.1, type = "response")
+actual <- combined_rd_ma_df$freq_orphan_drug_mas
+mod.od.1.rmse <- rmse(actual=actual, predicted=predicted)
+
+
 confint(mod.od.nw.1)
+mod.od.1.metrics <- get_od_model_metrics(mod.od.1, "Linear")
+
 ```
 
-## Freq of orphan drug mas by US over time - interaction
+
+## Linear Model 2 of Num of Annual Orphan Drug MAs
 
 ```{r}
-mod.od.2 <- lm(freq_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+mod.od.2 <- lm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004  + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd, data=combined_rd_ma_df)
+summary(mod.od.2)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.od.2)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 2 US  Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 2 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 2 US Residuals")
-
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 2 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 2 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 2 EU Residuals")
-mtext("Linear Model 2 of OD MAs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_od(mod.od.2, "2", "Linear")
 
 #Estimate covariance matrix with Newey West
-mod.od.2.vcov <- vcovPL(mod.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+mod.od.2.vcov <- vcovPL(mod.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
 
 #Adjust standard errors based on estimated covariance matrix
 mod.od.nw.2 <-coeftest(mod.od.2, vcov = mod.od.2.vcov)
 mod.od.nw.2
 
+#Get RMSE
+predicted <- predict(mod.od.2, type = "response")
+actual <- combined_rd_ma_df$freq_orphan_drug_mas
+mod.od.2.rmse <- rmse(actual=actual, predicted=predicted)
+
 confint(mod.od.nw.2)
+mod.od.2.metrics <- get_od_model_metrics(mod.od.2, "Linear")
+
 ```
 
-## Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+
+### VIFs of predictors
+```{r}
+vif(mod.od.2) 
+```
 
 ```{r}
-mod.od.3 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+cor(cbind(yearsafter2004=combined_rd_ma_df$yearsafter2004, annual_domestic_RD_spending_bil_dollars=combined_rd_ma_df$annual_domestic_RD_spending_bil_dollars, gdp_per_capita_annual_growthrate_usd=combined_rd_ma_df$gdp_per_capita_annual_growthrate_usd))
+```
+
+## Linear Model 3 of Num of Annual Orphan Drug MAs
+
+```{r}
+mod.od.3 <- lm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + gdp_per_capita_annual_growthrate_usd + as.factor(area):yearsafter2004 , data=combined_rd_ma_df)
 summary(mod.od.3)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.od.3)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 3 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 3 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 3 US Residuals")
-
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 3 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 3 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 3 EU Residuals")
-mtext("Linear Model 3 of OD MAs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_od(mod.od.3, "3", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.od.3.vcov <- vcovPL(mod.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -973,184 +1029,89 @@ mod.od.3.vcov <- vcovPL(mod.od.3, cluster = ~ as.factor(combined_rd_ma_df$area),
 mod.od.nw.3 <-coeftest(mod.od.3, vcov = mod.od.3.vcov)
 mod.od.nw.3
 
+#Get RMSE
+predicted <- predict(mod.od.3, type = "response")
+actual <- combined_rd_ma_df$freq_orphan_drug_mas
+mod.od.3.rmse <- rmse(actual=actual, predicted=predicted)
+
 confint(mod.od.nw.3)
+mod.od.3.metrics <- get_od_model_metrics(mod.od.3, "Linear")
+
 ```
 
-## Freq of orphan drug mas by Domestic R&D, Area, and interaction, year
+
+## Linear Model 4 of Num of Annual Orphan Drug MAs
 
 ```{r}
-mod.od.4 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df)
+mod.od.4 <- lm(freq_orphan_drug_mas ~ as.factor(area) + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd
+ + as.factor(area):annual_domestic_RD_spending_bil_dollars, data=combined_rd_ma_df)
 summary(mod.od.4)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.od.4)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 4 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 4 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 4 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 4 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 4 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 4 EU Residuals")
-mtext("Linear Model 4 of OD MAs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_od(mod.od.4, "4", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.od.4.vcov <- vcovPL(mod.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 
 #Adjust standard errors based on estimated covariance matrix
-mod.od.nw.4 <- coeftest(mod.od.4, vcov = mod.od.4.vcov) 
+mod.od.nw.4 <-coeftest(mod.od.4, vcov = mod.od.4.vcov)
 mod.od.nw.4
 
+#Get RMSE
+predicted <- predict(mod.od.4, type = "response")
+actual <- combined_rd_ma_df$freq_orphan_drug_mas
+mod.od.4.rmse <- rmse(actual=actual, predicted=predicted)
+
 confint(mod.od.nw.4)
+mod.od.4.metrics <- get_od_model_metrics(mod.od.4, "Linear")
 
 ```
 
-## Freq of orphan drug mas by Domestic R&D in the US with GDP growth, no area/ spending interaction
+
+
+## Linear Model 5 of Num of Annual Orphan Drug MAs
 
 ```{r}
-mod.od.5 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df)
+mod.od.5 <- lm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd + as.factor(area):yearsafter2004 + as.factor(area):annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df)
 summary(mod.od.5)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.od.5)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 5 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 5 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 5 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 5 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 5 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 5 EU Residuals")
-mtext("Linear Model 5 of OD MAs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_od(mod.od.5, "5", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.od.5.vcov <- vcovPL(mod.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 
 #Adjust standard errors based on estimated covariance matrix
-mod.od.nw.5 <-coeftest(mod.od.5, vcov = mod.od.5.vcov)
+mod.od.nw.5 <- coeftest(mod.od.5, vcov = mod.od.5.vcov) 
 mod.od.nw.5
 
+#Get RMSE
+predicted <- predict(mod.od.5, type = "response")
+actual <- combined_rd_ma_df$freq_orphan_drug_mas
+mod.od.5.rmse <- rmse(actual=actual, predicted=predicted)
+
 confint(mod.od.nw.5)
-```
-
-
-
-
-
-```{r}
-predicted <- predict(mod.od.5 , type = "response")
-
-ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Number of Annual Orphan Drug Market Authorizations",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Linear Model 5", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
-
-```
-
-## Freq of orphan drug mas by Domestic R&D, Area, and interaction and GDP growth rate
-
-```{r}
-mod.od.6 <- lm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df)
-summary(mod.od.6)
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.od.6)
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 6 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 6 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 6 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 6 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 6 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 6 EU Residuals")
-mtext("Linear Model 6 of OD MAs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.od.6.vcov <- vcovPL(mod.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")
-
-#Adjust standard errors based on estimated covariance matrix
-mod.od.nw.6<- coeftest(mod.od.6, vcov = mod.od.6.vcov)
-mod.od.nw.6
-confint(mod.od.nw.6)
-```
-
-With 95% confidence, after adjusting for annual R&D spending and annual
-GDP growth rate, a one-year increase is associated with between a
-further 1.19 and 7 million dollar increase in the number of
-market-authorized orphan drugs compared to the EU
-
-With 95% confidence, after adjusting for annual R&D spending and annual
-GDP growth rate, a one-year increase is associated with between a
-further 1.19 and 7 million dollar increase in the number of
-market-authorized orphan drugs compared to the EU
-
-
-
-
-```{r}
-predicted <- predict(mod.od.6 , type = "response")
-
-ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Number of Annual Orphan Drug Market Authorizations",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Linear Model 6", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
+mod.od.5.metrics <- get_od_model_metrics(mod.od.5, "Linear")
 
 ```
 
 
-```{r}
-aic_values <- round(c(AIC(mod.od.1), AIC(mod.od.2), AIC(mod.od.3), AIC(mod.od.4), AIC(mod.od.5), AIC(mod.od.6) ))
 
-stargazer(mod.od.1, mod.od.2, mod.od.3, mod.od.4, mod.od.5, mod.od.6, title="Models of Orphan Drug Market Authorizations (Not Adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+```{r}
+mod.od.metrics <- rbind(mod.od.1.metrics, mod.od.2.metrics, mod.od.3.metrics, mod.od.4.metrics, mod.od.5.metrics)
+aic_values <- round(mod.od.metrics$aic)
+rmse_values <- round(mod.od.metrics$rmse, 2)
+fstat_values <- round(mod.od.metrics$fstat, 2)
+p_values <- round(mod.od.metrics$pval, 4)
+adjrsq_values <- round(mod.od.metrics$adjrsq, 2)
+
+
+stargazer(mod.od.1, mod.od.2, mod.od.3, mod.od.4, mod.od.5, title="Linear Models of Orphan Drug Market Authorizations (Not Adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Years After 2004 (β<sup>̂</sup><sub>2</sub>)", "Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sup>̂</sup><sub>6</sub>)" ,"Intercept (β<sup>̂</sup><sub>0</sub>)"),
           dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values))
-          )
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Adj R^{2}", adjrsq_values), c("F Statistic", fstat_values), c("p-value", p_values)))
 ```
-
-
 
 ```{r}
 #creating shorter names because stargazer has a length limit for the input of all models
@@ -1160,42 +1121,320 @@ m2 <- mod.od.nw.2
 m3 <- mod.od.nw.3
 m4 <- mod.od.nw.4
 m5 <- mod.od.nw.5 
-m6 <- mod.od.nw.6
 
-aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
-
-
-stargazer(m1,m2,m3,m4,m5,m6, title="Newey-West Adjusted Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Linear Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/orphandrugMAmodels.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Years After 2004 (β<sup>̂</sup><sub>2</sub>)", "Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sub>6</sub>)" ,"Intercept (β<sup>̂</sup><sub>0</sub>)"),
           dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values))
-          )
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Adj R^{2}", adjrsq_values), c("F Statistic", fstat_values), c("p-value", p_values)))
 ```
 
-# Number of Market Authorizations for NEW Orphan Drugs Models
 
 
-## Freq of mas for NEW orphan drugs by US over time - no interaction
+
+
+# Poisson Models of Number of Orphan Drug Market Authorization Models
+
+## Poisson Model 1 of Num of Annual Orphan Drug MAs
 
 ```{r}
-mod.new.od.1 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df)
+mod.pois.od.1 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004, data=combined_rd_ma_df, family=poisson(link="log"))
+summary(mod.pois.od.1)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.new.od.1)
+plot_lin_pois_od(mod.pois.od.1, "1", "Poisson")
 
-par(mfrow =c(2,3))
+#Estimate covariance matrix with Newey West
+mod.pois.od.1.vcov <- vcovPL(mod.pois.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
 
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
+#Adjust standard errors based on estimated covariance matrix
+mod.pois.od.nw.1 <- coeftest(mod.pois.od.1, vcov = mod.pois.od.1.vcov)
+mod.pois.od.nw.1
 
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 1 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 1 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 1 US Residuals")
+confint(mod.pois.od.nw.1)
+mod.pois.od.1.metrics <- get_od_model_metrics(mod.pois.od.1, "Poisson")
 
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 1 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 1 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 1 EU Residuals")
-mtext("Linear Model 1 of MAs for NEW ODs", side = 3, line = -1.1, outer = TRUE)
+```
+
+
+## Poisson Model 2 of Num of Annual Orphan Drug MAs
+
+```{r}
+mod.pois.od.2 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd, data=combined_rd_ma_df, family=poisson(link="log"))
+summary(mod.pois.od.2)
+
+plot_lin_pois_od(mod.pois.od.2, "2", "Poisson")
+
+#Estimate covariance matrix with Newey West
+mod.pois.od.2.vcov <- vcovPL(mod.pois.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+
+#Adjust standard errors based on estimated covariance matrix
+mod.pois.od.nw.2 <- coeftest(mod.pois.od.2, vcov = mod.pois.od.2.vcov)
+mod.pois.od.nw.2
+
+confint(mod.pois.od.nw.2)
+mod.pois.od.2.metrics <- get_od_model_metrics(mod.pois.od.2, "Poisson")
+
+```
+
+## Poisson Model 3 of Num of Annual Orphan Drug MAs
+
+```{r}
+mod.pois.od.3 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + gdp_per_capita_annual_growthrate_usd + as.factor(area):yearsafter2004, data=combined_rd_ma_df, family=poisson(link="log"))
+summary(mod.pois.od.3)
+
+plot_lin_pois_od(mod.pois.od.3, "3", "Poisson")
+
+#Estimate covariance matrix with Newey West
+mod.pois.od.3.vcov <- vcovPL(mod.pois.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+
+#Adjust standard errors based on estimated covariance matrix
+mod.pois.od.nw.3 <- coeftest(mod.pois.od.3, vcov = mod.pois.od.3.vcov)
+mod.pois.od.nw.3
+
+confint(mod.pois.od.nw.3)
+mod.pois.od.3.metrics <- get_od_model_metrics(mod.pois.od.3, "Poisson")
+
+```
+
+
+
+
+
+## Poisson Model 4 of Num of Annual Orphan Drug MAs
+
+```{r}
+mod.pois.od.4 <- glm(freq_orphan_drug_mas ~ as.factor(area) + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd + as.factor(area):annual_domestic_RD_spending_bil_dollars, data=combined_rd_ma_df, family=poisson(link="log")) 
+summary(mod.pois.od.4)
+
+plot_lin_pois_od(mod.pois.od.4, "4", "Poisson")
+
+#Estimate covariance matrix with Newey West
+mod.pois.od.4.vcov <- vcovPL(mod.pois.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+
+#Adjust standard errors based on estimated covariance matrix
+mod.pois.od.nw.4 <- coeftest(mod.pois.od.4, vcov = mod.pois.od.4.vcov)
+mod.pois.od.nw.4
+
+confint(mod.pois.od.nw.4)
+mod.pois.od.4.metrics <- get_od_model_metrics(mod.pois.od.4, "Poisson")
+
+```
+
+
+
+
+
+## Poisson Model 5 of Num of Annual Orphan Drug MAs
+
+```{r}
+mod.pois.od.5 <- glm(freq_orphan_drug_mas ~  as.factor(area) + yearsafter2004 + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd + as.factor(area):yearsafter2004 + as.factor(area):annual_domestic_RD_spending_bil_dollars, data=combined_rd_ma_df, family=poisson(link="log")) 
+summary(mod.pois.od.5)
+
+plot_lin_pois_od(mod.pois.od.5, "5", "Poisson")
+
+#Estimate covariance matrix with Newey West
+mod.pois.od.5.vcov <- vcovPL(mod.pois.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
+
+#Adjust standard errors based on estimated covariance matrix
+mod.pois.od.nw.5 <- coeftest(mod.pois.od.5, vcov = mod.pois.od.5.vcov)
+mod.pois.od.nw.5
+
+
+confint(mod.pois.od.nw.5)
+mod.pois.od.5.metrics <- get_od_model_metrics(mod.pois.od.5, "Poisson")
+
+```
+
+```{r}
+mod.od.pois.metrics <- rbind(mod.pois.od.1.metrics, mod.pois.od.2.metrics, mod.pois.od.3.metrics, mod.pois.od.4.metrics, mod.pois.od.5.metrics)
+mod.od.pois.metrics
+```
+
+
+```{r}
+
+mod.od.pois.metrics <- rbind(mod.pois.od.1.metrics, mod.pois.od.2.metrics, mod.pois.od.3.metrics, mod.pois.od.4.metrics, mod.pois.od.5.metrics)
+aic_values <- round(mod.od.pois.metrics$aic)
+rmse_values <- round(mod.od.pois.metrics$rmse, 2)
+logLik_vlues <- round(mod.od.pois.metrics$LogLik, 2)
+
+
+#creating shorter names because stargazer has a length limit for the input of all models
+
+m1 <- mod.pois.od.1
+m2 <- mod.pois.od.2
+m3 <- mod.pois.od.3
+m4 <- mod.pois.od.4
+m5 <- mod.pois.od.5 
+
+
+stargazer(m1, m2, m3, m4, m5, title="Poisson Models of Annual Orphan Drug Market Authorizations (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Years After 2004 (β<sup>̂</sup><sub>2</sub>)","Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sup>̂</sup><sub>6</sub>)" , "Intercept (β<sup>̂</sup><sub>0</sub>)"),
+          dep.var.labels=c("Annual Number of Orphan Drug Market Authorizations"),
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Log Likelihood", logLik_vlues)))
+
+```
+
+```{r}
+#creating shorter names because stargazer has a length limit for the input of all models
+
+m1 <- mod.pois.od.nw.1
+m2 <- mod.pois.od.nw.2
+m3 <- mod.pois.od.nw.3
+m4 <- mod.pois.od.nw.4
+m5 <- mod.pois.od.nw.5 
+
+stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodels.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Years After 2004 (β<sup>̂</sup><sub>2</sub>)","Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sup>̂</sup><sub>6</sub>)" , "Intercept (β<sup>̂</sup><sub>0</sub>)"),
+          dep.var.labels=c("Annual Number of Orphan Drug Market Authorizations"),
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5", "Model 6"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Log Likelihood", logLik_vlues)))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Linear Models of Number of Market Authorizations for NEW Orphan Drugs 
+
+Plot Models of Number of Orphan Drug Market Authorizations for NEW Orphan Drugs (Linear or Poisson Models)
+```{r}
+plot_lin_pois_new_od <- function(model, model_number, model_type){
+  
+  #Plot residuals and acf/ pacf of residuals by panel (EU/US)
+  combined_rd_ma_df$residuals <- resid(model)
+  
+  par(mfrow =c(2,4))
+  
+  us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
+  eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
+  
+  plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="US Residuals", ylab="Residuals")
+  acf(us_resid_data$residuals, main="ACF of US Residuals")
+  pacf(us_resid_data$residuals, main="PACF of US Residuals")
+  qqnorm(us_resid_data$residuals, main = "QQ Plot of US Residuals")
+  
+  plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="EU Residuals", ylab="Residuals")
+  acf(eu_resid_data$residuals, main="ACF of EU Residuals")
+  pacf(eu_resid_data$residuals, main="PACF of EU Residuals")
+  qqnorm(eu_resid_data$residuals, main = "QQ Plot of EU Residuals")
+  
+  mtext(glue('{model_type} Model {model_number} of Annual MAs for New Orphan Drugs - Residual Plots'), side = 3, line = -1.1, outer = TRUE)
+
+  predicted <- predict(model , type = "response")
+  
+  ggplot(combined_rd_ma_df, aes(x = year, y = freq_new_orphan_drug_mas, color = area, alpha="Observed")) +
+    geom_point() +
+    labs(x = "Year",
+         y = str_wrap("Number of Annual Market Authorizations for New Orphan Drugs", width = 40),
+         color = "Area",
+         alpha = "Line Type",
+         title=str_wrap(glue("{model_type} Model {model_number} of Annual Market Authorizations for New Orphan Drugs"), width = 60))+
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
+    geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
+    scale_alpha_manual(values = c(0.5, 1))+
+  theme_minimal()
+    
+  # https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
+  #Controlling legend appearance in ggplot2 with override.aes
+  #July 9, 2020 ·  @aosmith16 
+  
+  # https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
+  #Teun van den Brand
+  #2024/02/26
+
+}
+```
+
+Get Metrics of Models of Number of Market Authorizations for NEW Orphan Drugs  (Linear or Poisson Models)
+```{r}
+
+get_new_od_model_metrics <- function(model, model_type){
+  #Get RMSE
+  predicted <- predict(model, type = "response")
+  actual <- combined_rd_ma_df$freq_new_orphan_drug_mas
+  model_rmse <- rmse(actual=actual, predicted=predicted)
+  
+  model_df1 <- NA
+  model_df2 <- NA
+  model_adjRsq <- NA
+  model_fstat <- NA
+  model_pval <- NA
+  model_loglik <- NA
+  
+  if(model_type == "Linear"){
+    
+    model_df1 <- summary(model)$fstatistic[2]
+    model_df2 <- summary(model)$fstatistic[3]
+    model_fstat <- summary(model)$fstatistic[1]
+    model_pval <- pf(summary(model)$fstatistic[1], summary(model)$fstatistic[2], summary(model)$fstatistic[3], lower.tail = FALSE) 
+    # https://www.reneshbedre.com/blog/get-f-stat-p-value-from-lm.html
+    # Renesh Bedre
+    # March 26, 2023
+  
+    model_adjRsq <- summary(model)$adj.r.squared
+  }
+  
+  if(model_type == "Poisson"){
+    model_loglik <- logLik(model)
+  }
+  
+  model_aic <- AIC(model)
+  
+  metrics_df <- data.frame("rmse" = model_rmse, "aic"= model_aic, "df1" = model_df1, "df2" = model_df2, "fstat" = model_fstat, "pval" = model_pval, "adjrsq" = model_adjRsq, "LogLik" = model_loglik)
+  rownames(metrics_df) <- NULL
+
+
+  return(metrics_df)
+}
+```
+
+## Linear Model 1 of Annual MAs for NEW orphan drugs
+
+```{r}
+mod.new.od.1 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004, data=combined_rd_ma_df)
+summary(mod.new.od.1)
+
+plot_lin_pois_new_od(mod.new.od.1, "1", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.new.od.1.vcov <- vcovPL(mod.new.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1204,30 +1443,18 @@ mod.new.od.1.vcov <- vcovPL(mod.new.od.1, cluster = ~ as.factor(combined_rd_ma_d
 mod.new.od.nw.1 <-coeftest(mod.new.od.1, vcov = mod.new.od.1.vcov)
 mod.new.od.nw.1
 
-confint(mod.new.od.nw.1)
+mod.new.od.1.metrics <- get_new_od_model_metrics(mod.new.od.1, "Linear")
+
 ```
 
-## Freq of NEW orphan drugs mas by US over time - interaction
+
+## Linear Model 2 of Annual MAs for NEW orphan drugs
 
 ```{r}
-mod.new.od.2 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+mod.new.od.2 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd, data=combined_rd_ma_df)
+summary(mod.new.od.2)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.new.od.2)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 2 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 2 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 2 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 2 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 2 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 2 EU Residuals")
-mtext("Linear Model 2 of MAs for NEW ODs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.new.od.2, "2", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.new.od.2.vcov <- vcovPL(mod.new.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1236,32 +1463,18 @@ mod.new.od.2.vcov <- vcovPL(mod.new.od.2, cluster = ~ as.factor(combined_rd_ma_d
 mod.new.od.nw.2 <-coeftest(mod.new.od.2, vcov = mod.new.od.2.vcov)
 mod.new.od.nw.2
 
+mod.new.od.2.metrics <- get_new_od_model_metrics(mod.new.od.2, "Linear")
 
 confint(mod.new.od.nw.2)
 ```
 
-## Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+## Linear Model 3 of Annual MAs for NEW orphan drugs
 
 ```{r}
-mod.new.od.3 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df)
+mod.new.od.3 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + gdp_per_capita_annual_growthrate_usd + as.factor(area):yearsafter2004 , data=combined_rd_ma_df)
 summary(mod.new.od.3)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.new.od.3)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 3 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 3 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 3 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 3 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 3 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 3 EU Residuals")
-mtext("Linear Model 3 of MAs for NEW ODs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.new.od.3, "3", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.new.od.3.vcov <- vcovPL(mod.new.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1270,31 +1483,19 @@ mod.new.od.3.vcov <- vcovPL(mod.new.od.3, cluster = ~ as.factor(combined_rd_ma_d
 mod.new.od.nw.3 <-coeftest(mod.new.od.3, vcov = mod.new.od.3.vcov)
 mod.new.od.nw.3
 
+mod.new.od.3.metrics <- get_new_od_model_metrics(mod.new.od.3, "Linear")
+
 confint(mod.new.od.nw.3)
 ```
 
-## Freq of mas for NEW orphan drugs by Domestic R&D, Area, and interaction, year
+
+## Linear Model 4 of Annual MAs for NEW orphan drugs
 
 ```{r}
-mod.new.od.4 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df)
+mod.new.od.4 <- lm(freq_new_orphan_drug_mas ~  as.factor(area) + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd +  as.factor(area):annual_domestic_RD_spending_bil_dollars, data=combined_rd_ma_df)
 summary(mod.new.od.4)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.new.od.4)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 4 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 4 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 4 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 4 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 4 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 4 EU Residuals")
-mtext("Linear Model 4 of MAs for NEW ODs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.new.od.4, "4", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.new.od.4.vcov <- vcovPL(mod.new.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1303,35 +1504,21 @@ mod.new.od.4.vcov <- vcovPL(mod.new.od.4, cluster = ~ as.factor(combined_rd_ma_d
 mod.new.od.nw.4 <-coeftest(mod.new.od.4, vcov = mod.new.od.4.vcov)
 mod.new.od.nw.4
 
+mod.new.od.4.metrics <- get_new_od_model_metrics(mod.new.od.4, "Linear")
+
 confint(mod.new.od.nw.4)
 
 ```
 
 
 
-
-## Freq of mas for NEW orphan drug by Domestic R&D in the US with GDP growth, no area/ spending interaction
+## Linear Model 5 of Annual MAs for NEW orphan drugs
 
 ```{r}
-mod.new.od.5 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df)
+mod.new.od.5 <- lm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd + as.factor(area):yearsafter2004 + as.factor(area):annual_domestic_RD_spending_bil_dollars, data=combined_rd_ma_df)
 summary(mod.new.od.5)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.new.od.5)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 5 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 5 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 5 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 5 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 5 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 5 EU Residuals")
-mtext("Linear Model 5 of MAs for NEW ODs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.new.od.5, "5", "Linear")
 
 #Estimate covariance matrix with Newey West
 mod.new.od.5.vcov <- vcovPL(mod.new.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994") 
@@ -1340,85 +1527,19 @@ mod.new.od.5.vcov <- vcovPL(mod.new.od.5, cluster = ~ as.factor(combined_rd_ma_d
 mod.new.od.nw.5 <-coeftest(mod.new.od.5, vcov = mod.new.od.5.vcov)
 mod.new.od.nw.5
 
+mod.new.od.5.metrics <- get_new_od_model_metrics(mod.new.od.5, "Linear")
+
 confint(mod.new.od.nw.5)
 ```
 
-
 ```{r}
-predicted <- predict(mod.new.od.5 , type = "response")
+mod.new.od.metrics <- rbind(mod.new.od.1.metrics, mod.new.od.2.metrics, mod.new.od.3.metrics, mod.new.od.4.metrics, mod.new.od.5.metrics)
+aic_values <- round(mod.new.od.metrics$aic)
+rmse_values <- round(mod.new.od.metrics$rmse, 2)
+fstat_values <- round(mod.new.od.metrics$fstat, 2)
+p_values <- round(mod.new.od.metrics$pval, 4)
+adjrsq_values <- round(mod.new.od.metrics$adjrsq, 2)
 
-ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Number of Annual Orphan Drug Market Authorizations",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Number of Annual Market Authorizations for NEW Orphan Drugs Over Time Estimated by Linear Model 5", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
-
-```
-
-## Freq of mas for NEW orphan drugs by Domestic R&D, Area, and interaction and GDP growth rate
-
-```{r}
-mod.new.od.6 <- lm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df)
-summary(mod.new.od.6)
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.new.od.6)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 6 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 6 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 6 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 6 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 6 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 6 EU Residuals")
-mtext("Linear Model 6 of MAs for NEW ODs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.new.od.6.vcov <- vcovPL(mod.new.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-
-#Adjust standard errors based on estimated covariance matrix
-mod.new.od.nw.6 <-coeftest(mod.new.od.6, vcov = mod.new.od.6.vcov)
-mod.new.od.nw.6
-
-confint(mod.new.od.nw.6)
-
-```
-
-With 95% confidence, after adjusting for annual R&D spending and annual
-GDP growth rate, a one-year increase is associated with between a
-further 1.19 and 7 million dollar increase in the number of
-market-authorized orphan drugs compared to the EU
-
-With 95% confidence, after adjusting for annual R&D spending and annual
-GDP growth rate, a one-year increase is associated with between a
-further 1.19 and 7 million dollar increase in the number of
-market-authorized orphan drugs compared to the EU
-
-
-
-
-
-
-```{r}
 #creating shorter names because stargazer has a length limit for the input of all models
 
 m1 <- mod.new.od.1
@@ -1426,17 +1547,16 @@ m2 <- mod.new.od.2
 m3 <- mod.new.od.3
 m4 <- mod.new.od.4
 m5 <- mod.new.od.5 
-m6 <- mod.new.od.6
-
-aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
 
 
-stargazer(m1, m2, m3, m4, m5, m6, title="Models of Market Authorizations for NEW Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1, m2, m3, m4, m5, title="Linear Models of Market Authorizations for New Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Years After 2004 (β<sup>̂</sup><sub>2</sub>)", "Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sup>̂</sup><sub>6</sub>)", "Intercept (β<sup>̂</sup><sub>0</sub>)"),
           dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values))
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Adj R^{2}", adjrsq_values), c("F Statistic", fstat_values), c("p-value", p_values)))
 
-          )
 ```
 
 ```{r}
@@ -1447,39 +1567,18 @@ m2 <- mod.new.od.nw.2
 m3 <- mod.new.od.nw.3
 m4 <- mod.new.od.nw.4
 m5 <- mod.new.od.nw.5 
-m6 <- mod.new.od.nw.6
-
-aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
 
 
-stargazer(m1, m2, m3, m4, m5, m6, title="Newey-West Adjusted Models of Market Authorizations for NEW Orphan Drugs", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
+stargazer(m1, m2, m3, m4, m5, title="Newey-West Adjusted Linear Models of Market Authorizations for New Orphan Drugs", align=TRUE, type = "html", out="Final Models Formatted/NEWorphandrugMAmodels.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)", "Years After 2004 (β<sup>̂</sup><sub>2</sub>)", "Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sup>̂</sup><sub>6</sub>)", "Intercept (β<sup>̂</sup><sub>0</sub>)"),
           dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values)))
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Adj R^{2}", adjrsq_values), c("F Statistic", fstat_values), c("p-value", p_values)))
+
 ```
 
--   interaction btw area and r&d
-
--   look in literature and see if policy chances list policy change by
-    year
-
--   intervention shock that stays - indicator 1 where policy is 0 where
-    its not
-
--   line plot instead of points
-
--   subset on same time frame - find eu data if possible but if not
-    available then subset us
-
--   add graphs and stuff to lit review
-
--   add tables to
-
--   change gdp to % change in gdp - quarterly Federal reserve FRED
-
-```{r}
-combined_rd_ma_df
-```
 
 Overall mean of Domestic R&D spending
 
@@ -1514,355 +1613,16 @@ mean(subset(combined_rd_ma_df ,area=="EU")$freq_new_orphan_drug_mas)
 
 ```
 
-# Poisson Models
-
-# Poisson Models for Number of Orphan Drug Market Authorization Models
-
-## Poisson Model of Freq of orphan drug mas by US over time - no interaction
-
-```{r}
-mod.pois.od.1 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.od.1)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 1 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 1 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 1 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 1 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 1 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 1 EU Residuals")
-mtext("Poisson Model 1 of Orphan Drug MAs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.pois.od.1.vcov <- vcovPL(mod.pois.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-
-#Adjust standard errors based on estimated covariance matrix
-mod.pois.od.nw.1 <- coeftest(mod.pois.od.1, vcov = mod.pois.od.1.vcov)
-mod.pois.od.nw.1
-
-confint(mod.pois.od.nw.1)
-```
-
-## Poisson Model For Freq of orphan drug mas by US over time - interaction
-
-```{r}
-mod.pois.od.2 <- glm(freq_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.od.2)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 2 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 2 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 2 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 2 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 2 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 2 EU Residuals")
-mtext("Poisson Model 2 of Orphan Drug MAs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.pois.od.2.vcov <- vcovPL(mod.pois.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-
-#Adjust standard errors based on estimated covariance matrix
-mod.pois.od.nw.2 <- coeftest(mod.pois.od.2, vcov = mod.pois.od.2.vcov)
-mod.pois.od.nw.2
-
-confint(mod.pois.od.nw.2)
-```
-
-
-
-```{r}
-predicted <- predict(mod.pois.od.2 , type = "response")
-
-ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Annual Domestic R&D Spending (Billions USD)",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Poisson Model 2", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
-
-```
-
-
-## Poisson Model of Freq of orphan drug mas by Domestic R&D in the US no area/ spending interaction or gdp growth rate
-
-```{r}
-mod.pois.od.3 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df , family=poisson(link="log"))
-summary(mod.pois.od.3)
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.od.3)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 3 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 3 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 3 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 3 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 3 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 3 EU Residuals")
-mtext("Poisson Model 3 of Orphan Drug MAs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.pois.od.3.vcov <- vcovPL(mod.pois.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-
-#Adjust standard errors based on estimated covariance matrix
-mod.pois.od.nw.3 <- coeftest(mod.pois.od.3, vcov = mod.pois.od.3.vcov)
-mod.pois.od.nw.3
-
-confint(mod.pois.od.nw.3)
-```
-
-## Poisson model of Freq of orphan drug mas by Domestic R&D, Area, and interaction, year
-
-```{r}
-mod.pois.od.4 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.od.4)
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.od.4)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 4 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 4 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 4 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 4 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 4 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 4 EU Residuals")
-mtext("Poisson Model 4 of Orphan Drug MAs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.pois.od.4.vcov <- vcovPL(mod.pois.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-
-#Adjust standard errors based on estimated covariance matrix
-mod.pois.od.nw.4 <- coeftest(mod.pois.od.4, vcov = mod.pois.od.4.vcov)
-mod.pois.od.nw.4
-
-confint(mod.pois.od.nw.4)
-
-```
-
-
-
-## Poisson model of Freq of orphan drug mas by Domestic R&D in the US with GDP growth, no area/ spending interaction
-
-```{r}
-mod.pois.od.5 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.od.5)
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.od.5)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 5 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 5 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 5 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 5 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 5 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 5 EU Residuals")
-mtext("Poisson Model 5 of Orphan Drug MAs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.pois.od.5.vcov <- vcovPL(mod.pois.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-
-#Adjust standard errors based on estimated covariance matrix
-mod.pois.od.nw.5 <- coeftest(mod.pois.od.5, vcov = mod.pois.od.5.vcov)
-mod.pois.od.nw.5
-
-confint(mod.pois.od.nw.5)
-```
-
-
-```{r}
-predicted <- predict(mod.pois.od.5 , type = "response")
-
-ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Annual Domestic R&D Spending (Billions USD)",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Poisson Model 5", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
-
-```
-
-## Poisson model of Freq of orphan drug mas by Domestic R&D, Area, and interaction and GDP growth rate
-
-```{r}
-mod.pois.od.6 <- glm(freq_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.od.6)
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.od.6)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 6 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 6 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 6 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 6 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 6 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 6 EU Residuals")
-mtext("Poisson Model 6 of Orphan Drug MAs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.pois.od.6.vcov <- vcovPL(mod.pois.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-
-#Adjust standard errors based on estimated covariance matrix
-mod.pois.od.nw.6 <- coeftest(mod.pois.od.6, vcov = mod.pois.od.6.vcov)
-mod.pois.od.nw.6
-
-confint(mod.pois.od.nw.6)
-
-```
-
-
-
-
-```{r}
-predicted <- predict(mod.pois.od.6 , type = "response")
-
-ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Annual Domestic R&D Spending (Billions USD)",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Number of Annual Orphan Drug Market Authorizations Over Time Estimated by Poisson Model 6", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
-
-```
-
-```{r}
-
-#creating shorter names because stargazer has a length limit for the input of all models
-
-m1 <- mod.pois.od.1
-m2 <- mod.pois.od.2
-m3 <- mod.pois.od.3
-m4 <- mod.pois.od.4
-m5 <- mod.pois.od.5 
-m6 <- mod.pois.od.6
-
-stargazer(m1, m2, m3, m4, m5, m6, title="Poisson Models of Orphan Drug Market Authorizations (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
-          dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs")
-          )
-```
-
-```{r}
-#creating shorter names because stargazer has a length limit for the input of all models
-
-m1 <- mod.pois.od.nw.1
-m2 <- mod.pois.od.nw.2
-m3 <- mod.pois.od.nw.3
-m4 <- mod.pois.od.nw.4
-m5 <- mod.pois.od.nw.5 
-m6 <- mod.pois.od.nw.6
-
-aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
-
-stargazer(m1,m2,m3,m4,m5,m6, title="Newey-West Adjusted Poisson Models of Orphan Drug Market Authorizations", align=TRUE, type = "html", out="Final Models Formatted/PoissonorphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
-          dep.var.labels=c("Annual Number of Market Authorized Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values))
-
-          )
-```
 
 # Poisson Models for Number of Market Authorizations for NEW Orphan Drugs
 
-
-
-
-## Poisson Model for Freq of mas for NEW orphan drugs by US over time - no interaction
+## Poisson model 1 of Annual Num of MAs for NEW orphan drugs
 
 ```{r}
 mod.pois.new.od.1 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
+summary(mod.pois.new.od.1)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.new.od.1)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 1 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 1 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 1 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 1 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 1 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 1 EU Residuals")
-mtext("Poisson Model 1 of MAs for NEW Orphan Drugs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.pois.new.od.1, "1", "Poisson")
 
 #Estimate covariance matrix with Newey West
 mod.pois.new.od.1.vcov <- vcovPL(mod.pois.new.od.1, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1871,59 +1631,19 @@ mod.pois.new.od.1.vcov <- vcovPL(mod.pois.new.od.1, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.1 <- coeftest(mod.pois.new.od.1, vcov = mod.pois.new.od.1.vcov)
 mod.pois.new.od.nw.1
 
+mod.pois.new.od.1.metrics <- get_new_od_model_metrics(mod.pois.new.od.1, "Poisson")
 
 confint(mod.pois.new.od.nw.1)
 ```
 
 
+## Poisson model 2 of Annual Num of MAs for NEW orphan drugs
 
 ```{r}
-predicted <- predict(mod.pois.new.od.1 , type = "response")
+mod.pois.new.od.2 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd, data=combined_rd_ma_df, family=poisson(link="log"))
+summary(mod.pois.new.od.2)
 
-ggplot(combined_rd_ma_df, aes(x = year, y = freq_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Year",
-       y = "Annual Domestic R&D Spending (Billions USD)",
-       color = "Area",
-       alpha = "Line Type",
-       title=str_wrap("Number of Annual Market Authorizations for NEW Orphan Drugs Over Time Estimated by Poisson Model 1", width = 60))+
-  scale_color_manual(values = colorpallate)+
-  geom_line(aes(x=year, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-  
-# https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
-#Controlling legend appearance in ggplot2 with override.aes
-#July 9, 2020 ·  @aosmith16 
-
-# https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
-#Teun van den Brand
-#2024/02/26
-
-```
-
-
-## Poisson Model For Freq of mas for NEW Orphan Drugs by US over time - interaction
-
-```{r}
-mod.pois.new.od.2 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) * yearsafter2004  , data=combined_rd_ma_df, family=poisson(link="log"))
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.new.od.2)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 2 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 2 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 2 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 2 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 2 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 2 EU Residuals")
-mtext("Poisson Model 2 of MAs for NEW Orphan Drugs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.pois.new.od.2, "2", "Poisson")
 
 #Estimate covariance matrix with Newey West
 mod.pois.new.od.2.vcov <- vcovPL(mod.pois.new.od.2, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1932,31 +1652,18 @@ mod.pois.new.od.2.vcov <- vcovPL(mod.pois.new.od.2, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.2 <- coeftest(mod.pois.new.od.2, vcov = mod.pois.new.od.2.vcov)
 mod.pois.new.od.nw.2
 
+mod.pois.new.od.2.metrics <- get_new_od_model_metrics(mod.pois.new.od.2, "Poisson")
+
 confint(mod.pois.new.od.nw.2)
 ```
 
-## Poisson Model of Freq of mas for NEW Orphan Drugs by Domestic R&D in the US no area/ spending interaction or gdp growth rate
+## Poisson model 3 of Annual Num of MAs for NEW orphan drugs
 
 ```{r}
-mod.pois.new.od.3 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004  , data=combined_rd_ma_df , family=poisson(link="log"))
+mod.pois.new.od.3 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + gdp_per_capita_annual_growthrate_usd + as.factor(area):yearsafter2004, data=combined_rd_ma_df, family=poisson(link="log"))
 summary(mod.pois.new.od.3)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.new.od.3)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 3 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 3 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 3 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 3 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 3 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 3 EU Residuals")
-mtext("Poisson Model 3 of MAs for NEW Orphan Drugs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.pois.new.od.3, "3", "Poisson")
 
 #Estimate covariance matrix with Newey West
 mod.pois.new.od.3.vcov <- vcovPL(mod.pois.new.od.3, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1965,32 +1672,20 @@ mod.pois.new.od.3.vcov <- vcovPL(mod.pois.new.od.3, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.3 <- coeftest(mod.pois.new.od.3, vcov = mod.pois.new.od.3.vcov)
 mod.pois.new.od.nw.3
 
+mod.pois.new.od.3.metrics <- get_new_od_model_metrics(mod.pois.new.od.3, "Poisson")
+
 confint(mod.pois.new.od.nw.3)
 ```
 
 
-## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D, Area, and interaction, year
+
+## Poisson model 4 of Annual Num of MAs for NEW orphan drugs
 
 ```{r}
-mod.pois.new.od.4 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + as.factor(area)*annual_domestic_RD_spending_bil_dollars  , data=combined_rd_ma_df, family=poisson(link="log")) 
+mod.pois.new.od.4 <- glm(freq_new_orphan_drug_mas ~  as.factor(area)  + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd + as.factor(area):annual_domestic_RD_spending_bil_dollars, data=combined_rd_ma_df, family=poisson(link="log")) 
 summary(mod.pois.new.od.4)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.new.od.4)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 4 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 4 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 4 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 4 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 4 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 4 EU Residuals")
-mtext("Poisson Model 4 of MAs for NEW Orphan Drugs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.pois.new.od.4, "4", "Poisson")
 
 #Estimate covariance matrix with Newey West
 mod.pois.new.od.4.vcov <- vcovPL(mod.pois.new.od.4, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -1999,32 +1694,21 @@ mod.pois.new.od.4.vcov <- vcovPL(mod.pois.new.od.4, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.4 <- coeftest(mod.pois.new.od.4, vcov = mod.pois.new.od.4.vcov)
 mod.pois.new.od.nw.4
 
+mod.pois.new.od.4.metrics <- get_new_od_model_metrics(mod.pois.new.od.4, "Poisson")
+
 confint(mod.pois.new.od.nw.4)
 ```
 
 
-## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D in the US with GDP growth, no area/ spending interaction
+
+## Poisson model 5 of Annual Num of MAs for NEW orphan drugs
 
 ```{r}
-mod.pois.new.od.5 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area) * yearsafter2004 + gdp_growth_rate_annual  , data=combined_rd_ma_df, family=poisson(link="log")) 
+mod.pois.new.od.5 <- glm(freq_new_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + annual_domestic_RD_spending_bil_dollars + gdp_per_capita_annual_growthrate_usd
+ + as.factor(area):yearsafter2004 + as.factor(area):annual_domestic_RD_spending_bil_dollars, data=combined_rd_ma_df, family=poisson(link="log")) 
 summary(mod.pois.new.od.5)
 
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.new.od.5)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 5 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 5 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 5 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 5 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 5 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 5 EU Residuals")
-mtext("Poisson Model 5 of MAs for NEW Orphan Drugs", side = 3, line = -1.1, outer = TRUE)
+plot_lin_pois_new_od(mod.pois.new.od.5, "5", "Poisson")
 
 #Estimate covariance matrix with Newey West
 mod.pois.new.od.5.vcov <- vcovPL(mod.pois.new.od.5, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
@@ -2033,45 +1717,19 @@ mod.pois.new.od.5.vcov <- vcovPL(mod.pois.new.od.5, cluster = ~ as.factor(combin
 mod.pois.new.od.nw.5 <- coeftest(mod.pois.new.od.5, vcov = mod.pois.new.od.5.vcov)
 mod.pois.new.od.nw.5
 
+mod.pois.new.od.5.metrics <- get_new_od_model_metrics(mod.pois.new.od.5, "Poisson")
+
 confint(mod.pois.new.od.nw.5)
 ```
 
-## Poisson model of Freq of mas for NEW Orphan Drugs by Domestic R&D, Area, and interaction and GDP growth rate
-
-```{r}
-mod.pois.new.od.6 <- glm(freq_new_orphan_drug_mas ~ annual_domestic_RD_spending_bil_dollars + as.factor(area)*yearsafter2004 + gdp_growth_rate_annual + as.factor(area)*annual_domestic_RD_spending_bil_dollars , data=combined_rd_ma_df, family=poisson(link="log")) 
-summary(mod.pois.new.od.6)
-
-#Plot residuals and acf/ pacf of residuals by panel (EU/US)
-combined_rd_ma_df$residuals <- resid(mod.pois.new.od.6)
-
-par(mfrow =c(2,3))
-
-us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
-eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
-
-plot(us_resid_data$year, us_resid_data$residuals, xlab="Year", main="Model 6 US Residuals", ylab="Residuals")
-acf(us_resid_data$residuals, main="ACF of Model 6 US Residuals")
-pacf(us_resid_data$residuals, main="PACF of Model 6 US Residuals")
-
-plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="Model 6 EU Residuals", ylab="Residuals")
-acf(eu_resid_data$residuals, main="ACF of Model 6 EU Residuals")
-pacf(eu_resid_data$residuals, main="PACF of Model 6 EU Residuals")
-mtext("Poisson Model 6 of MAs for NEW Orphan Drugs", side = 3, line = -1.1, outer = TRUE)
-
-#Estimate covariance matrix with Newey West
-mod.pois.new.od.6.vcov <- vcovPL(mod.pois.new.od.6, cluster = ~ as.factor(combined_rd_ma_df$area), lag="NW1994")  
-mod.pois.new.od.nw.6 <- coeftest(mod.pois.new.od.6, vcov = mod.pois.new.od.6.vcov)
-mod.pois.new.od.nw.6
-
-confint(mod.pois.new.od.nw.6)
-
-```
-
-
 
 
 ```{r}
+
+mod.pois.new.od.metrics <- rbind(mod.pois.new.od.1.metrics, mod.pois.new.od.2.metrics, mod.pois.new.od.3.metrics, mod.pois.new.od.4.metrics, mod.pois.new.od.5.metrics)
+aic_values <- round(mod.pois.new.od.metrics$aic)
+rmse_values <- round(mod.pois.new.od.metrics$rmse, 2)
+loglik_values <- round(mod.pois.new.od.metrics$LogLik, 2)
 
 #creating shorter names because stargazer has a length limit for the input of all models
 
@@ -2080,12 +1738,15 @@ m2 <- mod.pois.new.od.2
 m3 <- mod.pois.new.od.3
 m4 <- mod.pois.new.od.4
 m5 <- mod.pois.new.od.5 
-m6 <- mod.pois.new.od.6
 
-stargazer(m1, m2, m3, m4, m5, m6, title="Poisson Models of Market Authorizations for NEW Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodelsNonAdjusted.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
-          dep.var.labels=c("Annual Number of Market Authorizations for NEW Orphan Drugs")
-          )
+stargazer(m1, m2, m3, m4, m5, title="Poisson Models of Market Authorizations for New Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodelsNonAdjusted.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)" , "Years After 2004 (β<sup>̂</sup><sub>2</sub>)", "Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sup>̂</sup><sub>6</sub>)" , "Intercept (β<sup>̂</sup><sub>0</sub>)"),
+          dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Log Likelihood", loglik_values)))
+
 ```
 
 ```{r}
@@ -2096,88 +1757,14 @@ m2 <- mod.pois.new.od.nw.2
 m3 <- mod.pois.new.od.nw.3
 m4 <- mod.pois.new.od.nw.4
 m5 <- mod.pois.new.od.nw.5 
-m6 <- mod.pois.new.od.nw.6
-
-aic_values <- round(c(AIC(m1), AIC(m2), AIC(m3), AIC(m4), AIC(m5), AIC(m6) ))
-
-stargazer(m1,m2,m3,m4,m5,m6, title="Newey-West Adjusted Poisson Models of Market Authorizations for NEW Orphan Drugs ", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodels.htm",
-          covariate.labels = c("Annual Domestic R&D Spending (Billions USD)", "US", "Years After 2004",  "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Annual Domestic R&D Spending (Billions USD):US" , "Intercept"),
-          dep.var.labels=c("Annual Number of Market Authorizations for NEW Orphan Drugs"),
-          add.lines = list(c("AIC", aic_values))
-          )
-```
-
-# Stationarity Test
-
-```{r}
-kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas)
-kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas)
-
-kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas)
-kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas)
-
-kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars)
-kpss.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars)
-
-```
-
-Low pvalues from Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test for the
-null hypothesis that x is level or trend stationary indicate
-nonstationarity in the timeseries of all three response variables
-
-Note: To estimate sigma\^2 the Newey-West estimator is used.
-
-<https://www.statisticshowto.com/kpss-test/> "A major disadvantage for
-the KPSS test is that it has a high rate of Type I errors (it tends to
-reject the null hypothesis too often)."
-
-```{r}
-adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas)
-adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas)
-
-adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas)
-adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas)
-
-adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars)
-adf.test(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars)
-
-```
-
-Augmented Dickey-Fuller test for the null that x has a unit root.
-
-# ACFs of original series
-
-```{r}
-acf(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas)
-acf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas)
-
-acf(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas)
-acf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas)
-
-acf(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars)
-acf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars)
-```
-
-# PACFs of original series
-
-```{r}
-pacf(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_new_orphan_drug_mas)
-pacf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_new_orphan_drug_mas)
-
-pacf(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$freq_orphan_drug_mas)
-pacf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas)
-
-pacf(combined_rd_ma_df[combined_rd_ma_df$area == "US",]$annual_domestic_RD_spending_bil_dollars)
-pacf(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$annual_domestic_RD_spending_bil_dollars)
-```
-
-```{r}
-sum(combined_rd_ma_df[combined_rd_ma_df$area == "EU",]$freq_orphan_drug_mas)
-```
 
 
-
-```{r}
-combined_rd_ma_df
+stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Market Authorizations for New Orphan Drugs ", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodels.htm",
+          covariate.labels = c("US (β<sup>̂</sup><sub>1</sub>)" , "Years After 2004 (β<sup>̂</sup><sub>2</sub>)", "Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)", "Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)", "Years After 2004:US (β<sup>̂</sup><sub>5</sub>)", "Annual Domestic R&D Spending (Billions USD):US (β<sup>̂</sup><sub>6</sub>)" , "Intercept (β<sup>̂</sup><sub>0</sub>)"),
+          dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
+          column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+          model.numbers=FALSE,
+          omit.stat = c("all"),
+          add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Log Likelihood", loglik_values)))
 ```
 

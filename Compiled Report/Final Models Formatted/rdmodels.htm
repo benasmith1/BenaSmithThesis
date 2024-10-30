@@ -1,24 +1,35 @@
 
-<table style="text-align:center"><caption><strong>Newey-West Adjusted Models of R&D Spending</strong></caption>
-<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="4"><em>Dependent variable:</em></td></tr>
-<tr><td></td><td colspan="4" style="border-bottom: 1px solid black"></td></tr>
-<tr><td style="text-align:left"></td><td colspan="4">Annual R&D Spending (Billion USD)</td></tr>
-<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td></tr>
-<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">US (β<sub>1</sub>)</td><td>21.286<sup>***</sup></td><td>21.286<sup>***</sup></td><td>9.351<sup>***</sup></td><td>9.213<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td>(3.141)</td><td>(3.188)</td><td>(2.470)</td><td>(2.510)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Annual GDP Growth Rate Per Capita (β<sub>2</sub>)</td><td></td><td></td><td></td><td>30.550</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td>(26.159)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Years After 2004 (β<sub>3</sub>)</td><td></td><td>1.882<sup>***</sup></td><td>1.180<sup>***</sup></td><td>1.187<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td></td><td>(0.229)</td><td>(0.096)</td><td>(0.081)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">US:Years After 2004 (β<sub>4</sub>)</td><td></td><td></td><td>1.404<sup>***</sup></td><td>1.397<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td>(0.321)</td><td>(0.325)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Intercept (β<sub>0</sub>)</td><td>24.970<sup>***</sup></td><td>8.977<sup>***</sup></td><td>14.944<sup>***</sup></td><td>14.473<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td>(2.455)</td><td>(3.279)</td><td>(1.138)</td><td>(0.785)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td></tr>
-<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">AIC</td><td>282</td><td>232</td><td>213</td><td>214</td></tr>
-<tr><td colspan="5" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="4" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
+<table style="text-align:center"><caption><strong>Newey-West Adjusted Linear Models of Annual Domestic Pharmaceutical R&D Spending</strong></caption>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="6"><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="6" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td colspan="6">Annual Domestic Pharmaceutical R&D Spending (Billion USD)</td></tr>
+<tr><td style="text-align:left"></td><td>Model 1</td><td>Model 2</td><td>Model 3</td><td>Model 4</td><td>Model 5</td><td>Model 6</td></tr>
+<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">US (β<sup>̂</sup><sub>1</sub>)</td><td>21.286<sup>***</sup></td><td>21.286<sup>***</sup></td><td>21.272<sup>***</sup></td><td>9.351<sup>***</sup></td><td>9.606<sup>***</sup></td><td>15.851<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(3.141)</td><td>(3.188)</td><td>(3.221)</td><td>(2.470)</td><td>(2.669)</td><td>(2.429)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>2</sub>)</td><td></td><td></td><td>0.183<sup>*</sup></td><td></td><td>0.083</td><td>-0.083</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td>(0.100)</td><td></td><td>(0.079)</td><td>(0.052)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Years After 2004 (β<sup>̂</sup><sub>3</sub>)</td><td></td><td>1.882<sup>***</sup></td><td>1.913<sup>***</sup></td><td>1.180<sup>***</sup></td><td>1.209<sup>***</sup></td><td>0.145</td></tr>
+<tr><td style="text-align:left"></td><td></td><td>(0.229)</td><td>(0.201)</td><td>(0.096)</td><td>(0.074)</td><td>(0.284)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Years After 2004<sup>2</sup> (β<sup>̂</sup><sub>4</sub>)</td><td></td><td></td><td></td><td></td><td></td><td>0.059<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td>(0.016)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">US:Years After 2004 (β<sup>̂</sup><sub>5</sub>)</td><td></td><td></td><td></td><td>1.404<sup>***</sup></td><td>1.373<sup>***</sup></td><td>-1.098<sup>*</sup></td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td>(0.321)</td><td>(0.331)</td><td>(0.618)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">US:Years After 2004<sup>2</sup> (β<sup>̂</sup><sub>6</sub>)</td><td></td><td></td><td></td><td></td><td></td><td>0.149<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td>(0.034)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Intercept (β<sup>̂</sup><sub>0</sub>)</td><td>24.970<sup>***</sup></td><td>8.977<sup>***</sup></td><td>8.120<sup>***</sup></td><td>14.944<sup>***</sup></td><td>14.423<sup>***</sup></td><td>18.145<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(2.455)</td><td>(3.279)</td><td>(2.920)</td><td>(1.138)</td><td>(0.896)</td><td>(0.916)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">AIC</td><td>282</td><td>232</td><td>233</td><td>213</td><td>214</td><td>165</td></tr>
+<tr><td style="text-align:left">RMSE</td><td>11.18</td><td>5.45</td><td>5.34</td><td>4.06</td><td>4.03</td><td>1.92</td></tr>
+<tr><td style="text-align:left">Adj R<sup>2</sup></td><td>0.46</td><td>0.87</td><td>0.87</td><td>0.92</td><td>0.92</td><td>0.98</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>30.81</td><td>115.83</td><td>78.31</td><td>143.9</td><td>106.16</td><td>306.67</td></tr>
+<tr><td style="text-align:left">p-value</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="6" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
 </table>

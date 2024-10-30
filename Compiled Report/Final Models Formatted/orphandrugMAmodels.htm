@@ -1,30 +1,34 @@
 
-<table style="text-align:center"><caption><strong>Newey-West Adjusted Models of Orphan Drug Market Authorizations</strong></caption>
-<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="6"><em>Dependent variable:</em></td></tr>
-<tr><td></td><td colspan="6" style="border-bottom: 1px solid black"></td></tr>
-<tr><td style="text-align:left"></td><td colspan="6">Annual Number of Market Authorized Orphan Drugs</td></tr>
-<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td></tr>
-<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Annual Domestic R&D Spending (Billions USD)</td><td></td><td></td><td>1.145<sup>***</sup></td><td>0.293</td><td>1.148<sup>***</sup></td><td>0.271</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td>(0.286)</td><td>(0.449)</td><td>(0.278)</td><td>(0.520)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">US</td><td>32.944<sup>***</sup></td><td>-4.994</td><td>-15.698<sup>**</sup></td><td>-30.572<sup>***</sup></td><td>-15.712<sup>**</sup></td><td>-30.834<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td>(9.890)</td><td>(7.426)</td><td>(5.787)</td><td>(6.968)</td><td>(5.856)</td><td>(8.973)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Years After 2004</td><td>2.827<sup>***</sup></td><td>0.595<sup>***</sup></td><td>-0.755<sup>**</sup></td><td>0.250</td><td>-0.759<sup>**</sup></td><td>0.277</td></tr>
-<tr><td style="text-align:left"></td><td>(0.378)</td><td>(0.145)</td><td>(0.283)</td><td>(0.561)</td><td>(0.281)</td><td>(0.653)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Annual GDP Growth Rate Per Capita</td><td></td><td></td><td></td><td></td><td>-2.867</td><td>5.530</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td>(45.820)</td><td>(55.192)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Years After 2004:US</td><td></td><td>4.463<sup>***</sup></td><td>2.856<sup>***</sup></td><td>1.623</td><td>2.853<sup>***</sup></td><td>1.606</td></tr>
-<tr><td style="text-align:left"></td><td></td><td>(0.703)</td><td>(0.760)</td><td>(1.016)</td><td>(0.769)</td><td>(1.097)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Annual Domestic R&D Spending (Billions USD):US</td><td></td><td></td><td></td><td>0.940<sup>**</sup></td><td></td><td>0.958<sup>*</sup></td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td>(0.448)</td><td></td><td>(0.556)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Intercept</td><td>-13.197<sup>*</sup></td><td>5.772<sup>***</sup></td><td>-11.333<sup>**</sup></td><td>1.392</td><td>-11.333<sup>**</sup></td><td>1.638</td></tr>
-<tr><td style="text-align:left"></td><td>(7.386)</td><td>(1.651)</td><td>(5.411)</td><td>(7.066)</td><td>(5.499)</td><td>(7.822)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">AIC</td><td>304</td><td>272</td><td>263</td><td>264</td><td>265</td><td>266</td></tr>
-<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="6" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
+<table style="text-align:center"><caption><strong>Newey-West Adjusted Linear Models of Orphan Drug Market Authorizations</strong></caption>
+<tr><td colspan="6" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="5"><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="5" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td colspan="5">Annual Number of Market Authorized Orphan Drugs</td></tr>
+<tr><td style="text-align:left"></td><td>Model 1</td><td>Model 2</td><td>Model 3</td><td>Model 4</td><td>Model 5</td></tr>
+<tr><td colspan="6" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">US (β<sup>̂</sup><sub>1</sub>)</td><td>32.944<sup>***</sup></td><td>-9.800</td><td>-4.177</td><td>-39.717<sup>***</sup></td><td>-29.508<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(9.890)</td><td>(8.026)</td><td>(8.025)</td><td>(7.308)</td><td>(6.381)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Years After 2004 (β<sup>̂</sup><sub>2</sub>)</td><td>2.827<sup>***</sup></td><td>-0.912</td><td>0.691<sup>***</sup></td><td></td><td>0.326</td></tr>
+<tr><td style="text-align:left"></td><td>(0.378)</td><td>(0.600)</td><td>(0.164)</td><td></td><td>(0.553)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Annual Domestic R&D Spending (Billions USD) (β<sup>̂</sup><sub>3</sub>)</td><td></td><td>2.007<sup>***</sup></td><td></td><td>0.520<sup>***</sup></td><td>0.280</td></tr>
+<tr><td style="text-align:left"></td><td></td><td>(0.319)</td><td></td><td>(0.137)</td><td>(0.435)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Annual GDP Growth Rate Per Capita (β<sup>̂</sup><sub>4</sub>)</td><td></td><td>0.217</td><td>0.267<sup>*</sup></td><td>0.116</td><td>0.170</td></tr>
+<tr><td style="text-align:left"></td><td></td><td>(0.246)</td><td>(0.154)</td><td>(0.161)</td><td>(0.160)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Years After 2004:US (β<sup>̂</sup><sub>5</sub>)</td><td></td><td></td><td>4.365<sup>***</sup></td><td></td><td>1.624</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td>(0.765)</td><td></td><td>(1.069)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Annual Domestic R&D Spending (Billions USD):US (β<sub>6</sub>)</td><td></td><td></td><td></td><td>1.331<sup>***</sup></td><td>0.923<sup>**</sup></td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td>(0.158)</td><td>(0.448)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Intercept (β<sup>̂</sup><sub>0</sub>)</td><td>-13.197<sup>*</sup></td><td>-32.230<sup>***</sup></td><td>4.101<sup>**</sup></td><td>-2.532</td><td>0.522</td></tr>
+<tr><td style="text-align:left"></td><td>(7.386)</td><td>(5.152)</td><td>(1.595)</td><td>(3.640)</td><td>(6.666)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td colspan="6" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">AIC</td><td>304</td><td>277</td><td>272</td><td>266</td><td>266</td></tr>
+<tr><td style="text-align:left">RMSE</td><td>14.76</td><td>9.54</td><td>9.02</td><td>8.2</td><td>7.74</td></tr>
+<tr><td style="text-align:left">Adj R<sup>2</sup></td><td>0.67</td><td>0.85</td><td>0.87</td><td>0.89</td><td>0.9</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>36.86</td><td>52.24</td><td>59.38</td><td>73.42</td><td>51.94</td></tr>
+<tr><td style="text-align:left">p-value</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td colspan="6" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="5" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
 </table>
