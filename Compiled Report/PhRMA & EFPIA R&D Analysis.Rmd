@@ -42,7 +42,6 @@ library(car)
 library(glue)
 ```
 
-# Data Cleaning
 
 # EFPIA/ Europe
 
@@ -124,7 +123,7 @@ Dollars to euros
 <https://www.macrotrends.net/2548/euro-dollar-exchange-rate-historical-chart>
 
 ```{r}
-usdtoeuroavgconversion <- read_xlsx("Cleaned Data/Area Level R&D Spending/USD to Euro Conversion Avg by Year.xlsx")
+usdtoeuroavgconversion <- read_xlsx("Original Data/USD to Euro Conversion Avg by Year.xlsx")
 usdtoeuroavgconversion
 eurotodollars <- as.data.frame(cbind(usdtoeuroavgconversion$Year, 1/usdtoeuroavgconversion$`Average Closing Price`))
 colnames(eurotodollars) <- c("year", "euros_to_dollar_conversion")
@@ -248,7 +247,7 @@ ggplot(eu_od_ma_freqs, aes(x = Year)) +
        y = str_wrap("Annual Number of Market Authorizations in the EU", width=40),
        title=str_wrap("Annual Number of Orphan Drug Market Authorizations in the EU", width=50)
        ) +
-  scale_color_manual(name = "Legend", values = c("darkred", "dodgerblue"))+
+  scale_color_manual(name = "Color", values = c("darkred", "dodgerblue"))+
   theme_minimal()
 ```
 
@@ -376,7 +375,7 @@ ggplot(us_od_ma_freqs, aes(x = Year)) +
        y = str_wrap("Annual Number of Market Authorizations in the US", width=40),
        title=str_wrap("Annual Number of Orphan Drug Market Authorizations in the US", width=50), 
        ) +
-  scale_color_manual(name = "Legend", values = c("darkred", "dodgerblue"))+
+  scale_color_manual(name = "Color", values = c("darkred", "dodgerblue"))+
   theme_minimal()
 ```
 
@@ -633,6 +632,7 @@ plot_linear_rd <- function(linear_model, model_number){
   # https://aosmith.rbind.io/2020/07/09/ggplot2-override-aes/
   #Controlling legend appearance in ggplot2 with override.aes
   #July 9, 2020 ·  @aosmith16 
+  #Ariel Muldoon
   
   # https://www.tidyverse.org/blog/2024/02/ggplot2-3-5-0-legends/
   # Teun van den Brand
