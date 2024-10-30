@@ -2,9 +2,9 @@
 
 Policies and Price Controls on the Research and Development of Orphan Drugs in the US and EU 
 
-The `Compiled Report` folder contains:
+`Bena Smith Thesis.docx` is the written thesis report
 
-`Bena Smith Thesis.docx`: The written thesis report
+The `Compiled Report` folder contains:
 
 `PhRMA & EFPIA R&D Analysis.Rmd`: An RMD file which runs the full data pipeline. Data cleaning, visualization, analysis, and model and figure export to `Final Models Formatted` and `Final Figures Formatted`. 
 
@@ -12,4 +12,4 @@ The `Compiled Report` folder contains:
 
 `Cleaned Data`: A folder with transformed data. Data was transformed externally due to some files in `Original Data` being in PDF form and placed in this folder. 
 
-`BenaSmithThesis.Rproj`: An R project that can be used to ensure reporducability of code
+`BenaSmithThesis.Rproj`: An R project that can be used to ensure reproducibility of code
