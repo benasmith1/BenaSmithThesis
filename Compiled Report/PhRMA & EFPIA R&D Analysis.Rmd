@@ -148,7 +148,7 @@ EU Orphan Drugs were scraped from a pdf
 it can be found in the the Original Data Folder
 
 ```{r}
-eu_orphan_drugs <- read_xlsx("Cleaned Data/Area Level Orphan Authorizations/EU_Orphan_w_Company from https___www.orpha.net_orphacom_cahiers_docs_GB_list_of_orphan_drugs_in_europe.pdf.xlsx")
+eu_orphan_drugs <- read_xlsx("Cleaned Data/Area Level Orphan Authorizations/NEWCOPYEU_Orphan_w_Company from https___www.orpha.net_orphacom_cahiers_docs_GB_list_of_orphan_drugs_in_europe.xlsx")
 eu_orphan_drugs <- clean_names(eu_orphan_drugs)
 eu_orphan_drugs
 ```
@@ -158,6 +158,17 @@ Check for duplicated rows
 ```{r}
 eu_orphan_drugs[duplicated(eu_orphan_drugs),]
 
+```
+
+
+
+Number of MAs per company
+```{r}
+eu_company_freq <- eu_orphan_drugs %>%
+  count(firm) %>%
+  arrange(desc(n))
+colnames(eu_company_freq) <- c("Firm", "Market Authorization Frequency")
+eu_company_freq
 ```
 
 EU number of market authorizations for each drug
@@ -180,16 +191,16 @@ nrow(eu_ma_freq[eu_ma_freq$`Market Authorization Frequency` > 1, ])
 ```
 
 ```{r}
-stargazer(eu_ma_freq[1:3,], title= "EU Market Authorization Frequencies for Orphan Drugs with Over 1 Market Authorization", rownames = FALSE, align=TRUE, summary=FALSE, type = "html", out="Final Figures Formatted/EU_OD_Multiple_MAs.htm")
+stargazer(eu_ma_freq[1:9,], title= "EU Market Authorization Frequencies for Orphan Drugs with Over 1 Market Authorization", rownames = FALSE, align=TRUE, summary=FALSE, type = "html", out="Final Figures Formatted/EU_OD_Multiple_MAs.htm")
 
 ```
 
 Look at where there are multiple market authorizations for the same drug
 
 ```{r}
-eu_orphan_drugs[eu_orphan_drugs$tradename == "CARBAGLU",]
+eu_orphan_drugs[eu_orphan_drugs$tradename == "GLIVEC",]
 eu_orphan_drugs[eu_orphan_drugs$tradename == "NEXAVAR",]
-eu_orphan_drugs[eu_orphan_drugs$tradename == "SOLIRIS",]
+eu_orphan_drugs[eu_orphan_drugs$tradename == "REVLIMID",]
 
 ```
 
@@ -299,6 +310,15 @@ us_orphan_drugs[duplicated(us_orphan_drugs),]
 
 ```
 
+Number of MAs per company
+```{r}
+us_company_freq <- us_orphan_drugs %>%
+  count(sponsor_company) %>%
+  arrange(desc(n))
+colnames(us_company_freq) <- c("Sponsor Company", "Market Authorization Frequency")
+us_company_freq
+```
+
 Number of designations per product
 
 ```{r}
@@ -368,7 +388,9 @@ us_od_ma_freqs
 Graph of US Market Authorizations orphan drugs
 
 ```{r}
-ggplot(us_od_ma_freqs, aes(x = Year)) +
+
+us_od_ma_freqs_post2003 <- us_od_ma_freqs[us_od_ma_freqs$Year > 2003,]
+ggplot(us_od_ma_freqs_post2003, aes(x = Year)) +
   geom_line(aes(y = `Freq Orphan Drug MAs`, color="Orphan Drug MAs")) +
   geom_line(aes(y = `Freq New Orphan Drug MAs`, color="New Orphan Drug MAs")) +
   labs(x = "Year",
@@ -379,9 +401,6 @@ ggplot(us_od_ma_freqs, aes(x = Year)) +
   theme_minimal()
 ```
 
-```{r}
-us_orphan_drugs
-```
 
 merge US orphan drug df with PhRMA r&d df
 
@@ -515,7 +534,7 @@ ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_doll
   labs(x = "Year",
        y = "Annual Domestic R&D Spending (Billions USD)",
        color = "Area",
-       title="Annual Domestic R&D Spending by Year in the EU and US") +
+       title="Annual Domestic R&D Spending in the EU and US") +
     scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
   theme_minimal()
 ```
@@ -530,6 +549,39 @@ ggplot(combined_rd_ma_df, aes(x = year, y = gdp_per_capita_annual_growthrate_usd
     scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
   theme_minimal()
 ```
+
+
+
+
+```{r}
+combined_rd_ma_df
+```
+
+
+```{r}
+ggplot(combined_rd_ma_df, aes(x = freq_orphan_drug_mas, y = annual_domestic_RD_spending_bil_dollars, color = area)) +
+  geom_line() +
+  labs(x = "Domestic R&D Spending",
+       y = "Freq Orphan Drug Mas",
+       color = "Area",
+       title="Orphan Drug MAs by Domestic R&D Spending in the EU and US") +
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
+  theme_minimal()
+```
+
+
+
+```{r}
+ggplot(combined_rd_ma_df, aes(x = freq_new_orphan_drug_mas, y = annual_domestic_RD_spending_bil_dollars, color = area)) +
+  geom_line() +
+  labs(x = "Domestic R&D Spending",
+       y = "Freq MAs for New Orphan Drugs",
+       color = "Area",
+       title="MAs for new Orphan Drugs by Domestic R&D Spending in the EU and US") +
+    scale_color_manual(name = "Color", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
+  theme_minimal()
+```
+
 
 Orphan Drug Frequencies by Year by Area
 
@@ -1766,5 +1818,11 @@ stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Market Au
           model.numbers=FALSE,
           omit.stat = c("all"),
           add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Log Likelihood", loglik_values)))
+```
+
+
+
+```{r}
+combined_rd_ma_df
 ```
 
