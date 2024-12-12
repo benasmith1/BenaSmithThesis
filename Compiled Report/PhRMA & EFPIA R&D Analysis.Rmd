@@ -267,7 +267,7 @@ ggplot(eu_od_ma_freqs, aes(x = Year)) +
        y = "Number of Market Authorizations in the EU",
        title="Annual Number of Orphan Drug Market Authorizations in the EU"
        ) +
-  scale_color_manual(name = " ", values = c("dodgerblue", "darkred"))+
+  scale_color_manual(name = " ", values = c("lightskyblue3", "darkred"))+
   theme_minimal()
 ```
 
@@ -424,7 +424,7 @@ ggplot(us_od_ma_freqs_post2003, aes(x = Year)) +
        y = str_wrap("Number of Market Authorizations in the US", width=60),
        title=str_wrap("Annual Number of Orphan Drug Market Authorizations in the US", width=60), 
        ) +
-  scale_color_manual(name = " ", values = c("dodgerblue", "darkred"))+
+  scale_color_manual(name = " ", values = c("lightskyblue3", "darkred"))+
   theme_minimal()
 ```
 
@@ -654,9 +654,9 @@ ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_doll
 ggplot(combined_rd_ma_df, aes(x = freq_orphan_drug_mas, y = annual_domestic_RD_spending_bil_dollars, color = area)) +
   geom_point() +
   labs(x = "Domestic R&D Spending",
-       y = "Number of Orphan Drug MAs",
+       y = "Number of Orphan Drug Market Authorizations",
        color = "Region",
-       title="Orphan Drug MAs by Domestic R&D Spending in the EU and US") +
+       title=str_wrap("Annual Number of Orphan Drug Market Authorizations by Domestic R&D Spending in the EU and US", width=50)) +
     scale_color_manual(name = "Region", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
   theme_minimal()
 ```
@@ -763,14 +763,13 @@ stargazer(rdspending_growth_rates,  out="Final Figures Formatted/RDSpendingAnnua
 
 # Linear Models of Annual Domestic R&D Spending
 
-Plot Linear Models of Annual Domestic R&D Spending
-
+Function to Plot Linear Models of Annual Domestic R&D Spending
 ```{r}
 plot_linear_rd <- function(linear_model, model_number){
   
   #Plot residuals and acf/ pacf of residuals by panel (EU/US)
   combined_rd_ma_df$residuals <- resid(linear_model)
-  par(mfrow =c(2,3))
+  par(mfrow=c(2,3))
   
   us_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "US",]
   eu_resid_data <- combined_rd_ma_df[combined_rd_ma_df$area == "EU",]
@@ -779,7 +778,6 @@ plot_linear_rd <- function(linear_model, model_number){
   acf(us_resid_data$residuals, main="ACF of US Residuals")
   pacf(us_resid_data$residuals, main="PACF of US Residuals")
   #qqnorm(us_resid_data$residuals, main = "QQ Plot of US Residuals")
-  
   
   plot(eu_resid_data$year, eu_resid_data$residuals, xlab="Year", main="EU Residuals", ylab="Residuals")
   acf(eu_resid_data$residuals, main="ACF of EU Residuals")
@@ -814,7 +812,7 @@ plot_linear_rd <- function(linear_model, model_number){
 }
 ```
 
-
+Function to Get Model Metrics of Linear Models of Annual Domestic R&D Spending
 ```{r}
 
 get_rd_model_metrics <- function(model, model_type){
@@ -823,18 +821,21 @@ get_rd_model_metrics <- function(model, model_type){
   predicted <- predict(model, type = "response")
   actual <- combined_rd_ma_df$annual_domestic_RD_spending_bil_dollars
   model_rmse <- Metrics::rmse(actual=actual, predicted=predicted)
-
+  
+  #Get F stat & pvalue
+  model_fstat <- summary(model)$fstatistic[1]
   model_df1 <- summary(model)$fstatistic[2]
   model_df2 <- summary(model)$fstatistic[3]
-  model_fstat <- summary(model)$fstatistic[1]
   model_pval <- pf(model_fstat, model_df1, model_df2, lower.tail = FALSE) 
   # https://www.reneshbedre.com/blog/get-f-stat-p-value-from-lm.html
   # Renesh Bedre
   # March 26, 2023
     
+  # Get Adj Rsq and AIC
   model_adjRsq <- summary(model)$adj.r.squared
   model_aic <- AIC(model)
   
+  #List metrics in a df
   metrics_df <- data.frame("rmse" = model_rmse, "aic"= model_aic, "df1" = model_df1, "df2" = model_df2, "fstat" = model_fstat, "pval" = model_pval, "adjrsq" = model_adjRsq)
   rownames(metrics_df) <- NULL
 
@@ -848,7 +849,7 @@ get_rd_model_metrics <- function(model, model_type){
 ```{r}
 mod.rd.1 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) , data=combined_rd_ma_df)
 summary(mod.rd.1)
-
+summary(mod.rd.1)$fstatistic
 plot_linear_rd(mod.rd.1, "1")
 
 #Estimate covariance matrix with Newey West
@@ -862,7 +863,7 @@ confint(mod.rd.nw.1)
 
 #Get Metrics
 mod.rd.1.metrics <- get_rd_model_metrics(mod.rd.1, "Linear")
-
+mod.rd.1.metrics
 ```
 
 ## Linear Model 2 of Annual Domestic R&D Spending
@@ -884,7 +885,7 @@ confint(mod.rd.nw.2)
 
 #Get Metrics
 mod.rd.2.metrics <- get_rd_model_metrics(mod.rd.2, "Linear")
-
+mod.rd.2.metrics
 ```
 
 ## Linear Model 3 of Annual Domestic R&D Spending
@@ -906,7 +907,7 @@ confint(mod.rd.nw.3)
 
 #Get Metrics
 mod.rd.3.metrics <- get_rd_model_metrics(mod.rd.3, "Linear")
-
+mod.rd.3.metrics
 ```
 
 
@@ -929,7 +930,7 @@ confint(mod.rd.nw.4)
 
 #Get Metrics
 mod.rd.4.metrics <- get_rd_model_metrics(mod.rd.4, "Linear")
-
+mod.rd.4.metrics
 ```
 
 ## Linear Model 5 of Annual Domestic R&D Spending
@@ -951,7 +952,7 @@ confint(mod.rd.nw.5)
 
 #Get Metrics
 mod.rd.5.metrics <- get_rd_model_metrics(mod.rd.5, "Linear")
-
+mod.rd.5.metrics
 ```
 
 ## Linear Model 6 of Annual Domestic R&D Spending
@@ -973,7 +974,7 @@ confint(mod.rd.nw.6)
 
 #Get Metrics
 mod.rd.6.metrics <- get_rd_model_metrics(mod.rd.6, "Linear")
-
+mod.rd.6.metrics
 ```
 
 
@@ -1021,7 +1022,7 @@ stargazer(m1, m2, m3, m4, m5, m6, title="Newey-West Adjusted Linear Models of An
 
 # Linear Models of Number of Orphan Drug Market Authorizations
 
-Plot Models of Number of Orphan Drug Market Authorizations (Linear or
+Function to Plot Models of Number of Orphan Drug Market Authorizations (Linear or
 Poisson Models)
 
 ```{r}
@@ -1078,6 +1079,7 @@ Get Metrics of Models of Number of Orphan Drug Market Authorizations
 ```{r}
 
 get_od_model_metrics <- function(model, model_type){
+  
   #Get RMSE
   predicted <- predict(model, type = "response")
   actual <- combined_rd_ma_df$freq_orphan_drug_mas
@@ -1092,15 +1094,13 @@ get_od_model_metrics <- function(model, model_type){
   model_loglik <- NA
   
   if(model_type == "Linear"){
-    
     model_df1 <- summary(model)$fstatistic[2]
     model_df2 <- summary(model)$fstatistic[3]
     model_fstat <- summary(model)$fstatistic[1]
-    model_pval <- pf(summary(model)$fstatistic[1], summary(model)$fstatistic[2], summary(model)$fstatistic[3], lower.tail = FALSE) 
+    model_pval <- pf(model_fstat, model_df1, model_df2, lower.tail = FALSE) 
     # https://www.reneshbedre.com/blog/get-f-stat-p-value-from-lm.html
     # Renesh Bedre
     # March 26, 2023
-  
     model_adjRsq <- summary(model)$adj.r.squared
   }
   
@@ -1117,7 +1117,6 @@ get_od_model_metrics <- function(model, model_type){
   return(metrics_df)
 }
 ```
-
 
 
 
@@ -1139,7 +1138,6 @@ mod.od.nw.1
 
 confint(mod.od.nw.1)
 mod.od.1.metrics <- get_od_model_metrics(mod.od.1, "Linear")
-
 ```
 
 
@@ -1309,7 +1307,7 @@ mod.pois.od.nw.1
 
 confint(mod.pois.od.nw.1)
 mod.pois.od.1.metrics <- get_od_model_metrics(mod.pois.od.1, "Poisson")
-
+mod.pois.od.1.metrics
 ```
 
 ## Poisson Model 2 of Num of Annual Orphan Drug MAs
@@ -1329,6 +1327,7 @@ mod.pois.od.nw.2
 
 confint(mod.pois.od.nw.2)
 mod.pois.od.2.metrics <- get_od_model_metrics(mod.pois.od.2, "Poisson")
+mod.pois.od.2.metrics
 
 ```
 
@@ -1351,7 +1350,7 @@ mod.pois.od.nw.3
 
 confint(mod.pois.od.nw.3)
 mod.pois.od.3.metrics <- get_od_model_metrics(mod.pois.od.3, "Poisson")
-
+mod.pois.od.3.metrics
 ```
 
 
@@ -1372,7 +1371,7 @@ mod.pois.od.nw.4
 
 confint(mod.pois.od.nw.4)
 mod.pois.od.4.metrics <- get_od_model_metrics(mod.pois.od.4, "Poisson")
-
+mod.pois.od.4.metrics
 ```
 
 ## Poisson Model 5 of Num of Annual Orphan Drug MAs
@@ -1482,7 +1481,7 @@ plot_lin_pois_new_od <- function(model, model_number, model_type){
   ggplot(combined_rd_ma_df, aes(x = year, y = freq_new_orphan_drug_mas, color = area, alpha="Observed")) +
     geom_point() +
     labs(x = "Year",
-         y = str_wrap("Number of Annual Market Authorizations for New Orphan Drugs", width = 40),
+         y = str_wrap("Number of Market Authorizations for New Orphan Drugs", width = 40),
          color = "Region",
          alpha = " ",
          title=str_wrap(glue("{model_type} Model {model_number} of Market Authorizations for New Orphan Drugs"), width = 60))+
@@ -1525,7 +1524,7 @@ get_new_od_model_metrics <- function(model, model_type){
     model_df1 <- summary(model)$fstatistic[2]
     model_df2 <- summary(model)$fstatistic[3]
     model_fstat <- summary(model)$fstatistic[1]
-    model_pval <- pf(summary(model)$fstatistic[1], summary(model)$fstatistic[2], summary(model)$fstatistic[3], lower.tail = FALSE) 
+    model_pval <- pf(model_fstat, model_df1, model_df2, lower.tail = FALSE) 
     # https://www.reneshbedre.com/blog/get-f-stat-p-value-from-lm.html
     # Renesh Bedre
     # March 26, 2023
@@ -1564,7 +1563,6 @@ mod.new.od.nw.1 <-coeftest(mod.new.od.1, vcov = mod.new.od.1.vcov)
 mod.new.od.nw.1
 
 mod.new.od.1.metrics <- get_new_od_model_metrics(mod.new.od.1, "Linear")
-
 confint(mod.new.od.nw.1)
 ```
 
@@ -1781,6 +1779,7 @@ mod.pois.new.od.nw.1 <- coeftest(mod.pois.new.od.1, vcov = mod.pois.new.od.1.vco
 mod.pois.new.od.nw.1
 
 mod.pois.new.od.1.metrics <- get_new_od_model_metrics(mod.pois.new.od.1, "Poisson")
+mod.pois.new.od.1.metrics
 
 confint(mod.pois.new.od.nw.1)
 ```
@@ -1801,6 +1800,7 @@ mod.pois.new.od.nw.2 <- coeftest(mod.pois.new.od.2, vcov = mod.pois.new.od.2.vco
 mod.pois.new.od.nw.2
 
 mod.pois.new.od.2.metrics <- get_new_od_model_metrics(mod.pois.new.od.2, "Poisson")
+mod.pois.new.od.2.metrics
 
 confint(mod.pois.new.od.nw.2)
 ```
@@ -1822,6 +1822,7 @@ mod.pois.new.od.nw.3 <- coeftest(mod.pois.new.od.3, vcov = mod.pois.new.od.3.vco
 mod.pois.new.od.nw.3
 
 mod.pois.new.od.3.metrics <- get_new_od_model_metrics(mod.pois.new.od.3, "Poisson")
+mod.pois.new.od.3.metrics
 
 confint(mod.pois.new.od.nw.3)
 ```
@@ -1843,24 +1844,10 @@ mod.pois.new.od.nw.4 <- coeftest(mod.pois.new.od.4, vcov = mod.pois.new.od.4.vco
 mod.pois.new.od.nw.4
 
 mod.pois.new.od.4.metrics <- get_new_od_model_metrics(mod.pois.new.od.4, "Poisson")
+mod.pois.new.od.4.metrics
 
 confint(mod.pois.new.od.nw.4)
 
-predicted <- predict(mod.pois.new.od.4, type = "response")
-
-
-# Plot of Annual Orphan Drug Market Authorizations by R&D spending
-ggplot(combined_rd_ma_df, aes(x = annual_domestic_RD_spending_bil_dollars, y = freq_new_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Domestic R&D Spending (Billion USD)",
-       y = str_wrap("Number of Orphan Drug Market Authorizations", width = 40),
-       color = "Region",
-       alpha = "",
-       title=str_wrap(glue("Poisson Model 4 of Market Authorizations for New Orphan Drugs by Domestic R&D Spending"), width = 60))+
-  scale_color_manual(name = "Region", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
-  geom_line(aes(x=annual_domestic_RD_spending_bil_dollars, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
   
 ```
 
@@ -1880,24 +1867,10 @@ mod.pois.new.od.nw.5 <- coeftest(mod.pois.new.od.5, vcov = mod.pois.new.od.5.vco
 mod.pois.new.od.nw.5
 
 mod.pois.new.od.5.metrics <- get_new_od_model_metrics(mod.pois.new.od.5, "Poisson")
+mod.pois.new.od.5.metrics
 
 confint(mod.pois.new.od.nw.5)
 
-predicted <- predict(mod.pois.new.od.5, type = "response")
-
-# Plot of Annual Orphan Drug Market Authorizations by R&D spending
-ggplot(combined_rd_ma_df, aes(x = annual_domestic_RD_spending_bil_dollars, y = freq_new_orphan_drug_mas, color = area, alpha="Observed")) +
-  geom_point() +
-  labs(x = "Domestic R&D Spending (Billion USD)",
-       y = str_wrap("Number of Orphan Drug Market Authorizations", width = 40),
-       color = "Region",
-       alpha = "",
-       title=str_wrap(glue("Poisson Model 5 of Market Authorizations for New Orphan Drugs by Domestic R&D Spending"), width = 60))+
-  scale_color_manual(name = "Region", values = c('US' = 'darkblue', 'EU' = '#E66100')) +
-  geom_line(aes(x=annual_domestic_RD_spending_bil_dollars, y=predicted, alpha = "Fitted"))+
-  scale_alpha_manual(values = c(0.5, 1))+
-theme_minimal()
-    
 
 ```
 
@@ -1917,7 +1890,7 @@ m3 <- mod.pois.new.od.3
 m4 <- mod.pois.new.od.4
 m5 <- mod.pois.new.od.5 
 
-stargazer(m1, m2, m3, m4, m5, title="Poisson Models of Market Authorizations for New Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodelsNonAdjusted.htm",
+stargazer(m1, m2, m3, m4, m5, title="Poisson Models of Annual Market Authorizations for New Orphan Drugs (Not adjusted for Error Structure)", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodelsNonAdjusted.htm",
           covariate.labels = c("US", "Years After 2004", "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
           column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
@@ -1936,7 +1909,7 @@ m3 <- mod.pois.new.od.nw.3
 m4 <- mod.pois.new.od.nw.4
 m5 <- mod.pois.new.od.nw.5 
 
-stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Market Authorizations for New Orphan Drugs ", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodels.htm",
+stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Annual Market Authorizations for New Orphan Drugs ", align=TRUE, type = "html", out="Final Models Formatted/PoissonNEWorphandrugMAmodels.htm",
           covariate.labels = c("US", "Years After 2004", "Annual GDP Growth Rate Per Capita", "Years After 2004:US", "Intercept"),
           dep.var.labels=c("Annual Number of Market Authorizations for New Orphan Drugs"),
           column.labels=c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
