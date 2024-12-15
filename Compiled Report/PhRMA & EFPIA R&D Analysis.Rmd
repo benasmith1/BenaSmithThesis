@@ -86,7 +86,7 @@ efpia_rd <- clean_names(efpia_rd)
 efpia_rd
 ```
 
-formatting
+Formatting - removing commas 
 
 ```{r}
 efpia_rd$r_d_spending_millions_euros <- gsub(",", "", efpia_rd$r_d_spending_millions_euros)
@@ -116,18 +116,19 @@ efpia_rd_totals <- efpia_rd_totals[order(efpia_rd_totals$year),]
 efpia_rd_totals
 ```
 
-Dollars to euros
+Euros to Dollars
 <https://www.macrotrends.net/2548/euro-dollar-exchange-rate-historical-chart>
 
 ```{r}
-usdtoeuroavgconversion <- read_xlsx("Original Data/USD to Euro Conversion Avg by Year.xlsx")
-usdtoeuroavgconversion
-eurotodollars <- as.data.frame(cbind(usdtoeuroavgconversion$Year, 1/usdtoeuroavgconversion$`Average Closing Price`))
+eurotousdavgconversion <- read_xlsx("Original Data/USD to Euro Conversion Avg by Year.xlsx")
+eurotousdavgconversion
+eurotodollars <- as.data.frame(cbind(eurotousdavgconversion$Year, eurotousdavgconversion$`Average Closing Price`))
 colnames(eurotodollars) <- c("year", "euros_to_dollar_conversion")
 eurotodollars
 ```
 
-multiply conversion rate to get r&d spending in dollars
+
+Multiply euros by conversion rate to get r&d spending in dollars
 
 ```{r}
 rd_conversion_merged_df <- merge(efpia_rd_totals, eurotodollars, by = "year")
@@ -140,9 +141,9 @@ efpia_rd_totals
 
 ## EU orphan drug market authorizations
 
-EU Orphan Drugs were scraped from a pdf
+EU Orphan Drugs were scraped from the pdf:
 <https://www.orpha.net/pdfs/orphacom/cahiers/docs/GB/list_of_orphan_drugs_in_europe.pdf>
-A pdf can be found in the the Original Data Folder
+It can also be found in the the Original Data Folder
 
 Combines lists: 
 List of orphan medicinal products in Europe with European orphan designation and European marketing
@@ -210,6 +211,8 @@ Look at some instances where there are multiple market authorizations for the sa
 eu_orphan_drugs[eu_orphan_drugs$tradename == "GLIVEC",]
 eu_orphan_drugs[eu_orphan_drugs$tradename == "NEXAVAR",]
 eu_orphan_drugs[eu_orphan_drugs$tradename == "REVLIMID",]
+eu_orphan_drugs[eu_orphan_drugs$tradename == "CARBAGLU",]
+eu_orphan_drugs[eu_orphan_drugs$tradename == "SOLIRIS",]
 
 ```
 
@@ -256,11 +259,13 @@ eu_od_ma_freqs <- merge(eu_od_ma_freqs, eu_new_od_ma_freqs, by = "Year")
 eu_od_ma_freqs
 ```
 
-Graph of EU Market Authorizations orphan drugs
+Graph of EU Market Authorized orphan drugs
 
 ```{r}
 
-ggplot(eu_od_ma_freqs, aes(x = Year)) +
+eu_od_ma_freqs_2003 <- eu_od_ma_freqs <- eu_od_ma_freqs[eu_od_ma_freqs$Year > 2003,]
+
+ggplot(eu_od_ma_freqs_2003, aes(x = Year)) +
   geom_line(aes(y = `Freq Orphan Drug MAs`, color="All Orphan Drug MAs")) +
   geom_line(aes(y = `Freq New Orphan Drug MAs`, color="MAs for New Orphan Drugs")) +
   labs(x = "Year",
@@ -396,7 +401,7 @@ us_new_od_ma_freqs
 ```
 
 
-Select all MAs in the US format US MA date as year
+Select all MAs in the US. Format US MA date as year
 
 ```{r}
 us_orphan_drugs$Marketing.year <- year(as.Date(us_orphan_drugs$marketing_approval_date)) 
@@ -416,8 +421,10 @@ Graph of US Market Authorizations orphan drugs
 
 ```{r}
 
-us_od_ma_freqs_post2003 <- us_od_ma_freqs[us_od_ma_freqs$Year > 2003,]
-ggplot(us_od_ma_freqs_post2003, aes(x = Year)) +
+us_od_ma_freqs_2003 <- us_od_ma_freqs[us_od_ma_freqs$Year > 2003,]
+us_od_ma_freqs_2003_2022 <- us_od_ma_freqs[us_od_ma_freqs_2003$Year < 2022,]
+
+ggplot(us_od_ma_freqs, aes(x = Year)) +
   geom_line(aes(y = `Freq Orphan Drug MAs`, color="All Orphan Drug MAs")) +
   geom_line(aes(y = `Freq New Orphan Drug MAs`, color="MAs for New Orphan Drugs")) +
   labs(x = "Year",
@@ -429,7 +436,6 @@ ggplot(us_od_ma_freqs_post2003, aes(x = Year)) +
 ```
 
 merge US orphan drug df with PhRMA r&d df
-
 
 ```{r}
 phrma_us_rd <- phrma_us_rd[-dim(phrma_us_rd)[1],] # last row is NA
@@ -489,7 +495,8 @@ eu_gdp_percapita_annual
 
 
 # EU GDP (Billion USD)
-https://www.macrotrends.net/global-metrics/countries/EUU/european-union/gdp-gross-domestic-product#:~:text=European%20Union%20gdp%20for%202023,a%201.99%25%20decline%20from%202019.
+<https://www.macrotrends.net/global-metrics/countries/EUU/european-union/gdp-gross-domestic-product>
+EU GDP per capita is measured in billions of dollars and the growth rate is taken from those measurements
 
 ```{r}
 us_gdp_annual <- read.csv("Original Data/GDP/european-union-gdp-gross-domestic-product.csv", skip=8)
@@ -532,7 +539,7 @@ us_gdp_percapita_annual
 
 
 # US GDP (Billion USD)
-
+https://www.macrotrends.net/global-metrics/countries/usa/united-states/gdp-gross-domestic-product#:~:text=U.S.%20gdp%20for%202023%20was,a%200.92%25%20decline%20from%202019. 
 ```{r}
 us_gdp_annual <- read.csv("Original Data/GDP/united-states-gdp-gross-domestic-product.csv", skip=8)
 us_gdp_annual <- us_gdp_annual[c(24:64),c(1:4)]
@@ -562,6 +569,7 @@ combined_rd_ma_df <- combined_rd_ma_df %>%
 combined_rd_ma_df[combined_rd_ma_df$area =="US" & combined_rd_ma_df$year==2004,]$lagged_annual_domestic_RD_spending_bil_dollars <-  NA
 combined_rd_ma_df
 ```
+
 
 ```{r}
 
@@ -651,9 +659,9 @@ ggplot(combined_rd_ma_df, aes(x = year, y = annual_domestic_RD_spending_bil_doll
 
 
 ```{r}
-ggplot(combined_rd_ma_df, aes(x = freq_orphan_drug_mas, y = annual_domestic_RD_spending_bil_dollars, color = area)) +
+ggplot(combined_rd_ma_df, aes(x = annual_domestic_RD_spending_bil_dollars, y = freq_orphan_drug_mas, color = area)) +
   geom_point() +
-  labs(x = "Domestic R&D Spending",
+  labs(x = "Domestic R&D Spending (Billions USD)",
        y = "Number of Orphan Drug Market Authorizations",
        color = "Region",
        title=str_wrap("Annual Number of Orphan Drug Market Authorizations by Domestic R&D Spending in the EU and US", width=50)) +
@@ -662,7 +670,7 @@ ggplot(combined_rd_ma_df, aes(x = freq_orphan_drug_mas, y = annual_domestic_RD_s
 ```
 
 ```{r}
-ggplot(combined_rd_ma_df, aes(x = freq_new_orphan_drug_mas, y = annual_domestic_RD_spending_bil_dollars, color = area)) +
+ggplot(combined_rd_ma_df, aes(x = annual_domestic_RD_spending_bil_dollars, y = freq_new_orphan_drug_mas, color = area)) +
   geom_point() +
   labs(x = "Domestic R&D Spending",
        y = "Number of MAs for New Orphan Drugs",
@@ -694,10 +702,6 @@ combined_rd_ma_df
 ```
 
 
-
-```{r}
-combined_rd_ma_df
-```
 
 ### VIFs & Correlations of preditors
 
@@ -849,7 +853,7 @@ get_rd_model_metrics <- function(model, model_type){
 ```{r}
 mod.rd.1 <- lm(annual_domestic_RD_spending_bil_dollars ~  as.factor(area) , data=combined_rd_ma_df)
 summary(mod.rd.1)
-summary(mod.rd.1)$fstatistic
+
 plot_linear_rd(mod.rd.1, "1")
 
 #Estimate covariance matrix with Newey West
@@ -903,7 +907,7 @@ mod.rd.3.vcov <- vcovPL(mod.rd.3, cluster = ~ as.factor(combined_rd_ma_df$area),
 mod.rd.nw.3 <- coeftest(mod.rd.3, vcov = mod.rd.3.vcov)
 mod.rd.nw.3
 
-confint(mod.rd.nw.3)
+confint(mod.rd.nw.3, level=0.9)
 
 #Get Metrics
 mod.rd.3.metrics <- get_rd_model_metrics(mod.rd.3, "Linear")
@@ -1374,10 +1378,12 @@ mod.pois.od.4.metrics <- get_od_model_metrics(mod.pois.od.4, "Poisson")
 mod.pois.od.4.metrics
 ```
 
+
+
 ## Poisson Model 5 of Num of Annual Orphan Drug MAs
 
 ```{r}
-mod.pois.od.5 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + yearsafter2004:as.factor(area) + gdp_per_capita_annual_growthrate_usd, data=combined_rd_ma_df, family=poisson(link="log")) 
+mod.pois.od.5 <- glm(freq_orphan_drug_mas ~ as.factor(area) + yearsafter2004 + yearsafter2004:as.factor(area) + gdp_per_capita_annual_growthrate_usd , data=combined_rd_ma_df, family=poisson(link="log")) 
 summary(mod.pois.od.5)
 
 plot_lin_pois_od(mod.pois.od.5, "5", "Poisson")
@@ -1917,3 +1923,14 @@ stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Annual Ma
           omit.stat = c("all"),
           add.lines = list(c("AIC", aic_values), c("RMSE", rmse_values), c("Log Likelihood", loglik_values)))
 ```
+
+
+
+
+
+
+
+```{r}
+combined_rd_ma_df
+```
+
