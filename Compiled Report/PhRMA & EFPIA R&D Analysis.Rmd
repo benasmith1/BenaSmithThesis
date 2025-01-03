@@ -1934,3 +1934,8 @@ stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Annual Ma
 combined_rd_ma_df
 ```
 
+
+
+
+
+
