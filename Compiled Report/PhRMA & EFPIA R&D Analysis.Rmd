@@ -116,7 +116,7 @@ efpia_rd$r_d_spending_millions_euros <- as.numeric(efpia_rd$r_d_spending_million
 efpia_rd
 ```
 
-sum EU R&D spending by year over countries to get total spending
+Sum EU R&D spending by year over countries to get total spending
 
 ```{r}
 efpia_rd_totals <- efpia_rd %>%
@@ -229,7 +229,7 @@ eu_ma_freq$`Trade Name` <- str_to_title(eu_ma_freq$`Trade Name`)
 
 eu_ma_freq[eu_ma_freq$`Market Authorizations` > 1, ]
 ```
-
+Export to table
 
 ```{r}
 stargazer(eu_ma_freq[1:9,], title= "EU Market Authorization Counts for Orphan Drugs with Over 1 Market Authorization", rownames = FALSE, align=TRUE, summary=FALSE, type = "html", out="Final Figures Formatted/EU_OD_Multiple_MAs.htm")
@@ -263,7 +263,7 @@ eu_orphan_drugs_new
 ```
 
 
-count new EU orphan drug market authorizations by year
+Count new EU orphan drug market authorizations by year
 
 ```{r}
 eu_new_od_ma_freqs <- as.data.frame(table(eu_orphan_drugs_new$market_authorization_year))
@@ -280,7 +280,7 @@ eu_new_od_ma_freqs
 
 Select all MAs in the EU
 
-count EU market authorizations by year
+Count EU market authorizations by year
 
 ```{r}
 eu_od_ma_freqs <- as.data.frame(table(eu_orphan_drugs$market_authorization_year))
@@ -313,7 +313,7 @@ ggplot(eu_od_ma_freqs, aes(x = Year)) +
   theme_minimal()
 ```
 
-merge orphan drug and R&D spending tables for EU
+Merge orphan drug and R&D spending tables for EU
 
 ```{r}
 colnames(efpia_rd_totals) <- c("Year", "total_rd_euros", "total_rd_mil_dollars" , "total_rd_bil_dollars")
@@ -429,6 +429,8 @@ nrow(us_ma_freq[us_ma_freq$`Market Authorizations` > 5, ])
 us_ma_freq[us_ma_freq$`Market Authorizations` > 5, ]
 ```
 
+Export to table
+
 ```{r}
 stargazer(us_ma_freq[1:12,], title= "US Market Authorization Counts for Orphan Drugs with Over 5 Market Authorizations", rownames = FALSE, align=TRUE, summary=FALSE, type = "html", out="Final Figures Formatted/US_OD_Multiple_MAs.htm")
 
@@ -443,7 +445,6 @@ us_orphan_drugs[us_orphan_drugs$trade_name == "avastin",]
 us_orphan_drugs[us_orphan_drugs$trade_name == "lynparza",]
 
 ```
-
 
 Select only new drugs in the US
 ```{r}
@@ -498,7 +499,7 @@ ggplot(us_od_ma_freqs, aes(x = Year)) +
   theme_minimal()
 ```
 
-merge US orphan drug df with PhRMA r&d df
+Merge US orphan drug df with PhRMA r&d df
 
 ```{r}
 #phrma_us_rd <- phrma_us_rd[-dim(phrma_us_rd)[1],] # last row is NA
@@ -506,7 +507,7 @@ us_rd_mas <- merge(phrma_us_rd,us_od_ma_freqs,by="Year")
 us_rd_mas
 ```
 
-format
+Format
 
 ```{r}
 us_rd_mas$Domestic.R.D. <- parse_number(us_rd_mas$Domestic.R.D.) #dollars are in millions
@@ -514,7 +515,7 @@ us_rd_mas <- clean_names(us_rd_mas)
 us_rd_mas
 ```
 
-us dataframe simplified
+US dataframe simplified
 
 ```{r}
 us_rd_mas$annual_domestic_RD_spending_bil_dollars <- us_rd_mas$domestic_r_d /1000 #convert from millions of dollars to billions
@@ -522,21 +523,21 @@ us_rd_mas_simplified <- as.data.frame(cbind(us_rd_mas$year, us_rd_mas$annual_dom
 
 colnames(us_rd_mas_simplified) <- c("year", "annual_domestic_RD_spending_bil_dollars", "freq_orphan_drug_mas", "freq_new_orphan_drug_mas")
 
-us_rd_mas_simplified$area <- rep("US", dim(us_rd_mas_simplified)[1]) # write US indicator in area column
+us_rd_mas_simplified$area <- rep("US", nrow(us_rd_mas_simplified)) # write US indicator in area column
 
 us_rd_mas_simplified$lagged_annual_domestic_RD_spending_bil_dollars <- lag(us_rd_mas_simplified$annual_domestic_RD_spending_bil_dollars) # for lagged R&D spending - not used
 
 us_rd_mas_simplified
 ```
 
-eu dataframe simplified
+EU dataframe simplified
 
 ```{r}
 eu_rd_mas_simplified <- as.data.frame(cbind(eu_rd_mas$year, eu_rd_mas$total_rd_bil_dollars, eu_rd_mas$freq_orphan_drug_m_as, eu_rd_mas$freq_new_orphan_drug_m_as))
 
 colnames(eu_rd_mas_simplified) <- c("year", "annual_domestic_RD_spending_bil_dollars", "freq_orphan_drug_mas", "freq_new_orphan_drug_mas")
 
-eu_rd_mas_simplified$area <- rep("EU", dim(eu_rd_mas_simplified)[1]) # write EU indicator in area column
+eu_rd_mas_simplified$area <- rep("EU", nrow(eu_rd_mas_simplified)) # write EU indicator in area column
 
 eu_rd_mas_simplified$lagged_annual_domestic_RD_spending_bil_dollars <- lag(eu_rd_mas_simplified$annual_domestic_RD_spending_bil_dollars) # for lagged R&D spending - not used
 
@@ -602,7 +603,9 @@ us_gdp_percapita_annual
 
 
 # US GDP (Billion USD) - not used in analysis
-https://www.macrotrends.net/global-metrics/countries/usa/united-states/gdp-gross-domestic-product#:~:text=U.S.%20gdp%20for%202023%20was,a%200.92%25%20decline%20from%202019.
+
+<https://www.macrotrends.net/global-metrics/countries/usa/united-states/gdp-gross-domestic-product#:~:text=U.S.%20gdp%20for%202023%20was,a%200.92%25%20decline%20from%202019>
+
 ```{r}
 us_gdp_annual <- read.csv("Original Data/GDP/united-states-gdp-gross-domestic-product.csv", skip=8)
 us_gdp_annual <- us_gdp_annual[c(24:64),c(1:4)]
@@ -633,6 +636,7 @@ combined_rd_ma_df[combined_rd_ma_df$area =="US" & combined_rd_ma_df$year==2004,]
 combined_rd_ma_df
 ```
 
+# Data Visualizations
 
 ```{r}
 
@@ -1992,9 +1996,6 @@ stargazer(m1,m2,m3,m4,m5, title="Newey-West Adjusted Poisson Models of Annual Ma
 ```
 
 
-```{r}
-combined_rd_ma_df
-```
 
 
 
